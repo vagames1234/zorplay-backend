@@ -7,6 +7,12 @@ const landingRoute = require("./routes/landing");
 
 const callbackRoute = require("./routes/callback");
 
+const subscribeRoute = require("./routes/subscribe");
+
+const otpRoute = require("./routes/otp");
+
+const billingRoute = require("./routes/billing");
+
 const app = express();
 
 app.use(cors());
@@ -16,6 +22,12 @@ app.use("/callback", callbackRoute);
 
 // Landing Page Route
 app.use("/landing", landingRoute);
+
+app.use("/otp", otpRoute);
+
+app.use("/billing", billingRoute);
+
+app.use("/subscribe", subscribeRoute);
 
 app.get("/", (req, res) => {
     res.send("Zorplay DOT Backend Running");

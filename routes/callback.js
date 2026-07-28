@@ -3,87 +3,179 @@ const express = require("express");
 const router = express.Router();
 
 const {
-
     generateCallbackSignature
-
 } = require("../utils/encryption");
 
-router.get("/", (req, res) => {
+const {
+    subscribeUser
+} = require("../services/subscriptionApi");
 
-    const {
+router.get("/", async (req, res) => {
 
-        reason_code,
-        reason_desc,
-        msisdn,
-        service_id,
-        op_id,
-        partner_txid,
-        dot_txid,
-        signature
+    try {
 
-    } = req.query;
+        const {
 
-    console.log("================================");
-    console.log("DOT CALLBACK");
-    console.log("reason_code   :", req.query.reason_code);
-console.log("reason_desc   :", req.query.reason_desc);
-console.log("msisdn        :", req.query.msisdn);
-console.log("service_id    :", req.query.service_id);
-console.log("op_id         :", req.query.op_id);
-console.log("partner_txid  :", req.query.partner_txid);
-console.log("dot_txid      :", req.query.dot_txid);
-console.log("signature     :", req.query.signature);
+            reason_code,
+            reason_desc,
+            msisdn,
+            lpTransId,
+            service_id,
+            op_id,
+            partner_txid,
+            dot_txid,
+            signature
 
-console.log("--------------------------------");
+        } = req.query;
 
-console.log("Variable signature :", signature);
-    const expectedSignature =
-        generateCallbackSignature(
+        console.log("================================");
+        console.log("DOT CALLBACK");
+        console.log("reason_code  :", reason_code);
+        console.log("reason_desc  :", reason_desc);
+        console.log("msisdn       :", msisdn);
+        console.log("lpTransId    :", lpTransId);
+        console.log("service_id   :", service_id);
+        console.log("op_id        :", op_id);
+        console.log("partner_txid :", partner_txid);
+        console.log("dot_txid     :", dot_txid);
+        console.log("signature    :", signature);
 
-            process.env.USERNAME,
+        const expectedSignature =
+            generateCallbackSignature(
 
-            reason_code || "",
+                process.env.USERNAME,
 
-            reason_desc || "",
+                reason_code || "",
 
-            msisdn || "",
+                reason_desc || "",
 
-            service_id || "",
+                msisdn || "",
 
-            op_id || "",
+                service_id || "",
 
-            partner_txid || "",
+                op_id || "",
 
-            dot_txid || "",
+                partner_txid || "",
 
-            process.env.PASSWORD
+                dot_txid || "",
 
-        );
+                process.env.PASSWORD
 
-    const valid = expectedSignature === signature;
+            );
 
-    console.log("--------------------------------");
-    console.log("Received Signature :");
-    console.log(signature);
+        const signatureValid =
+            expectedSignature === signature;
 
-    console.log("--------------------------------");
-    console.log("Expected Signature :");
-    console.log(expectedSignature);
+        console.log("--------------------------------");
+        console.log("Signature Valid :", signatureValid);
 
-    console.log("--------------------------------");
-    console.log("Signature Valid :", valid);
+        /*
+ * Header Enrichment Success
+ */
 
-    console.log("================================");
+if (
+    reason_code === "0" &&
+    msisdn &&
+    lpTransId
+) {
 
-    res.json({
+    console.log("Header Enrichment Successful");
+    console.log("Calling Subscription Notification API...");
+
+    const subscriptionResponse =
+        await subscribeUser({
+
+            msisdn,
+
+            lpTransId,
+
+            partnerServiceLink:
+                process.env.PARTNER_SERVICE_LINK
+
+        });
+
+    return res.json({
 
         success: true,
 
-        signatureValid: valid,
+        flow: "HE",
 
-        callback: req.query
+        signatureValid,
+
+        callback: req.query,
+
+        subscription: subscriptionResponse
 
     });
+
+}
+
+/*
+ * Header Enrichment Failed
+ */
+
+if (reason_code === "1017") {
+
+    console.log("Header Enrichment Failed");
+    console.log("Redirect user to OTP Flow");
+
+    return res.json({
+
+        success: false,
+
+        flow: "OTP",
+
+        reason_code,
+
+        reason_desc,
+
+        callback: req.query,
+
+        message:
+            "Header Enrichment failed. Start OTP Flow."
+
+    });
+
+}
+
+/*
+ * Any Other Error
+ */
+
+console.log("Unhandled Callback");
+console.log("Reason Code :", reason_code);
+console.log("Reason Desc :", reason_desc);
+
+return res.json({
+
+    success: false,
+
+    flow: "UNKNOWN",
+
+    reason_code,
+
+    reason_desc,
+
+    callback: req.query
+
+});
+
+    }
+
+    catch (error) {
+
+        console.error(error.response?.data || error.message);
+
+        res.status(500).json({
+
+            success: false,
+
+            error:
+                error.response?.data || error.message
+
+        });
+
+    }
 
 });
 
