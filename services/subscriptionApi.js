@@ -40,16 +40,21 @@ async function subscribeUser(data) {
 
         body.lpTransId = data.lpTransId;
 
-        body.partnerServiceLink = data.partnerServiceLink;
+        body.partnerServiceLink =
+            data.partnerServiceLink;
 
     }
 
     /*
      * OTP Flow
      */
-    if (data.otpId && data.otpPIN) {
+    if (data.otpId) {
 
         body.otpId = data.otpId;
+
+    }
+
+    if (data.otpPIN) {
 
         body.otpPIN = data.otpPIN;
 

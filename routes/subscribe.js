@@ -11,48 +11,55 @@ router.post("/", async (req, res) => {
     try {
 
         const {
-
             msisdn,
-            lpTransId
-
+            lpTransId,
+            partnerServiceLink,
+            otpId,
+            otpPIN
         } = req.body;
 
-        if (!msisdn || !lpTransId) {
+        if (!msisdn) {
 
             return res.status(400).json({
 
                 success: false,
-
-                message: "msisdn and lpTransId are required."
+                message: "msisdn is required."
 
             });
 
         }
 
-        const result = await subscribeUser(
+        const result = await subscribeUser({
 
             msisdn,
-            lpTransId
+            lpTransId,
+            partnerServiceLink,
+            otpId,
+            otpPIN
 
-        );
+        });
 
         res.json({
 
             success: true,
-
             response: result
 
         });
 
     } catch (error) {
 
-        console.error(error.response?.data || error.message);
+        console.error(
+            error.response?.data ||
+            error.message
+        );
 
         res.status(500).json({
 
             success: false,
 
-            error: error.response?.data || error.message
+            error:
+                error.response?.data ||
+                error.message
 
         });
 
