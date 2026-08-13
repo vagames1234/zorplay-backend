@@ -11,6 +11,9 @@ const subscribeRoute = require("./routes/subscribe");
 
 const otpRoute = require("./routes/otp");
 
+const subscribePageRoute =
+    require("./routes/subscribePage");
+
 const billingRoute = require("./routes/billing");
 
 const app = express();
@@ -28,6 +31,11 @@ app.use("/otp", otpRoute);
 app.use("/billing", billingRoute);
 
 app.use("/subscribe", subscribeRoute);
+
+app.use(
+    "/subscribe-page",
+    subscribePageRoute
+);
 
 app.get("/", (req, res) => {
     res.send("Zorplay DOT Backend Running");

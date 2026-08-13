@@ -10,6 +10,7 @@ const {
     subscribeUser
 } = require("../services/subscriptionApi");
 
+
 router.get("/", async (req, res) => {
 
     try {
@@ -28,6 +29,7 @@ router.get("/", async (req, res) => {
 
         } = req.query;
 
+
         console.log("================================");
         console.log("DOT CALLBACK");
         console.log("reason_code  :", reason_code);
@@ -39,6 +41,7 @@ router.get("/", async (req, res) => {
         console.log("partner_txid :", partner_txid);
         console.log("dot_txid     :", dot_txid);
         console.log("signature    :", signature);
+
 
         const expectedSignature =
             generateCallbackSignature(
@@ -63,120 +66,174 @@ router.get("/", async (req, res) => {
 
             );
 
+
         const signatureValid =
             expectedSignature === signature;
+
 
         console.log("--------------------------------");
         console.log("Signature Valid :", signatureValid);
 
+
         /*
- * Header Enrichment Success
+         * Header Enrichment SUCCESS
+         */
+
+        if (
+            reason_code === "0" &&
+            msisdn &&
+            lpTransId
+        ) {
+
+            console.log("Header Enrichment Successful");
+
+            console.log(
+                "Calling Subscription Notification API..."
+            );
+
+
+            const subscriptionResponse =
+                await subscribeUser({
+
+                    msisdn,
+
+                    lpTransId,
+
+                    partnerServiceLink:
+                        process.env.PARTNER_SERVICE_LINK
+
+                });
+
+
+            return res.send(`
+
+                <html>
+
+                    <head>
+
+                        <title>Subscription Result</title>
+
+                    </head>
+
+                    <body>
+
+                        <h2>Subscription Successful</h2>
+
+                        <p>You have been successfully subscribed.</p>
+
+                    </body>
+
+                </html>
+
+            `);
+
+        }
+
+
+        /*
+ * Header Enrichment FAILED
+ *
+ * Redirect user to OTP UI
  */
 
-if (
-    reason_code === "0" &&
-    msisdn &&
-    lpTransId
-) {
+if (reason_code !== "0") {
 
-    console.log("Header Enrichment Successful");
-    console.log("Calling Subscription Notification API...");
+    console.log("Header Enrichment Failed");
 
-    const subscriptionResponse =
-        await subscribeUser({
+    console.log(
+        "Reason Code :",
+        reason_code
+    );
 
-            msisdn,
+    console.log(
+        "Reason Desc :",
+        reason_desc
+    );
 
-            lpTransId,
+    console.log(
+        "Redirecting user to OTP Flow"
+    );
 
-            partnerServiceLink:
-                process.env.PARTNER_SERVICE_LINK
+
+    const params =
+        new URLSearchParams({
+
+            reason_code:
+                reason_code || "",
+
+            reason_desc:
+                reason_desc || "",
+
+            msisdn:
+                msisdn || "",
+
+            partner_txid:
+                partner_txid || "",
+
+            dot_txid:
+                dot_txid || ""
 
         });
 
-    return res.json({
 
-        success: true,
-
-        flow: "HE",
-
-        signatureValid,
-
-        callback: req.query,
-
-        subscription: subscriptionResponse
-
-    });
+    return res.redirect(
+        `/otp?${params.toString()}`
+    );
 
 }
 
-/*
- * Header Enrichment Failed
- */
+        /*
+         * Unknown callback
+         */
 
-if (reason_code === "1017") {
+        return res.status(400).send(`
 
-    console.log("Header Enrichment Failed");
-    console.log("Redirect user to OTP Flow");
+            <html>
 
-    return res.json({
+                <head>
 
-        success: false,
+                    <title>Subscription Error</title>
 
-        flow: "OTP",
+                </head>
 
-        reason_code,
+                <body>
 
-        reason_desc,
+                    <h2>Subscription could not be completed</h2>
 
-        callback: req.query,
+                    <p>
+                        Reason:
+                        ${reason_desc || "Unknown error"}
+                    </p>
 
-        message:
-            "Header Enrichment failed. Start OTP Flow."
+                </body>
 
-    });
+            </html>
 
-}
-
-/*
- * Any Other Error
- */
-
-console.log("Unhandled Callback");
-console.log("Reason Code :", reason_code);
-console.log("Reason Desc :", reason_desc);
-
-return res.json({
-
-    success: false,
-
-    flow: "UNKNOWN",
-
-    reason_code,
-
-    reason_desc,
-
-    callback: req.query
-
-});
+        `);
 
     }
 
     catch (error) {
 
-        console.error(error.response?.data || error.message);
+        console.error(
+            error.response?.data ||
+            error.message
+        );
+
 
         res.status(500).json({
 
             success: false,
 
             error:
-                error.response?.data || error.message
+                error.response?.data ||
+                error.message
 
         });
 
     }
 
 });
+
 
 module.exports = router;

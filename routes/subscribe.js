@@ -6,6 +6,7 @@ const {
     subscribeUser
 } = require("../services/subscriptionApi");
 
+
 router.post("/", async (req, res) => {
 
     try {
@@ -18,42 +19,138 @@ router.post("/", async (req, res) => {
             otpPIN
         } = req.body;
 
-        if (!msisdn) {
 
-            return res.status(400).json({
+        /*
+         * ==========================================
+         * OTP FLOW
+         * ==========================================
+         *
+         * DOT instructed:
+         *
+         * sendPin
+         *     ↓
+         * receive otpId
+         *     ↓
+         * user enters PIN
+         *     ↓
+         * Subscription Notification API
+         *
+         * No OTP check API.
+         */
 
-                success: false,
-                message: "msisdn is required."
+        if (otpId && otpPIN) {
+
+            if (!msisdn) {
+
+                return res.status(400).json({
+
+                    success: false,
+
+                    message:
+                        "msisdn is required for OTP subscription."
+
+                });
+
+            }
+
+
+            console.log("====================================");
+            console.log("OTP SUBSCRIPTION REQUEST");
+            console.log("msisdn :", msisdn);
+            console.log("otpId  :", otpId);
+            console.log("====================================");
+
+
+            const result = await subscribeUser({
+
+                msisdn,
+                otpId,
+                otpPIN
+
+            });
+
+
+            return res.json({
+
+                success: true,
+
+                flow: "OTP",
+
+                response: result
 
             });
 
         }
 
-        const result = await subscribeUser({
 
-            msisdn,
-            lpTransId,
-            partnerServiceLink,
-            otpId,
-            otpPIN
+        /*
+         * ==========================================
+         * HEADER ENRICHMENT FLOW
+         * ==========================================
+         */
+
+        if (msisdn && lpTransId) {
+
+            console.log("====================================");
+            console.log("HE SUBSCRIPTION REQUEST");
+            console.log("msisdn    :", msisdn);
+            console.log("lpTransId :", lpTransId);
+            console.log("====================================");
+
+
+            const result = await subscribeUser({
+
+                msisdn,
+
+                lpTransId,
+
+                partnerServiceLink:
+                    partnerServiceLink ||
+                    process.env.PARTNER_SERVICE_LINK
+
+            });
+
+
+            return res.json({
+
+                success: true,
+
+                flow: "HE",
+
+                response: result
+
+            });
+
+        }
+
+
+        /*
+         * ==========================================
+         * INVALID REQUEST
+         * ==========================================
+         */
+
+        return res.status(400).json({
+
+            success: false,
+
+            message:
+                "Invalid subscription request."
 
         });
 
-        res.json({
+    }
 
-            success: true,
-            response: result
-
-        });
-
-    } catch (error) {
+    catch (error) {
 
         console.error(
+            "SUBSCRIPTION ERROR:",
             error.response?.data ||
             error.message
         );
 
-        res.status(500).json({
+
+        return res.status(500).json({
 
             success: false,
 
@@ -66,5 +163,6 @@ router.post("/", async (req, res) => {
     }
 
 });
+
 
 module.exports = router;
