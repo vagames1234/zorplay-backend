@@ -1,83 +1,194 @@
 const axios = require("axios");
 
-/**
- * Subscription Notification API
+
+/*
+ * ==========================================
+ * SUBSCRIPTION NOTIFICATION API
+ * ==========================================
  */
+
 async function subscribeUser(data) {
 
-    const auth = Buffer.from(
-        `${process.env.USERNAME}:${process.env.PASSWORD}`
-    ).toString("base64");
+
+    /*
+     * Basic Authentication
+     */
+
+    const auth =
+        Buffer.from(
+            `${process.env.USERNAME}:${process.env.PASSWORD}`
+        ).toString("base64");
+
+
+    /*
+     * Request Headers
+     */
 
     const headers = {
 
-        Authorization: `Basic ${auth}`,
+        Authorization:
+            `Basic ${auth}`,
 
-        PartnerId: process.env.PARTNER_ID,
+        PartnerId:
+            process.env.PARTNER_ID,
 
-        "Content-Type": "application/json",
+        "Content-Type":
+            "application/json",
 
-        Accept: "application/json"
+        Accept:
+            "application/json"
 
     };
+
+
+    /*
+     * Common fields
+     */
 
     const body = {
 
-        msisdn: data.msisdn,
+        msisdn:
+            data.msisdn,
 
-        serviceId: process.env.SERVICE_ID,
+        serviceId:
+            process.env.SERVICE_ID,
 
-        opId: Number(process.env.OP_ID),
+        opId:
+            Number(process.env.OP_ID),
 
-        action: 1
+        action:
+            1
 
     };
 
+
     /*
-     * Header Enrichment Flow
+     * ==========================================
+     * HE FLOW
+     * ==========================================
+     *
+     * Landing Page API returns lpTransId.
+     *
+     * Client requirement:
+     *
+     * msisdn
+     * serviceId
+     * opId
+     * action
+     * lpTransId
+     *
      */
+
     if (data.lpTransId) {
 
-        body.lpTransId = data.lpTransId;
-
-        body.partnerServiceLink =
-            data.partnerServiceLink;
+        body.lpTransId =
+            data.lpTransId;
 
     }
+
 
     /*
-     * OTP Flow
+     * ==========================================
+     * OTP FLOW
+     * ==========================================
+     *
+     * Client requirement:
+     *
+     * msisdn
+     * serviceId
+     * opId
+     * action
+     * otpId
+     * otpPIN
+     *
      */
+
     if (data.otpId) {
 
-        body.otpId = data.otpId;
+        body.otpId =
+            data.otpId;
 
     }
+
 
     if (data.otpPIN) {
 
-        body.otpPIN = data.otpPIN;
+        body.otpPIN =
+            data.otpPIN;
 
     }
 
-    console.log("====================================");
-    console.log("Subscription Notification Request");
-    console.log(body);
-    console.log("====================================");
 
-    const response = await axios.post(
+    /*
+     * ==========================================
+     * LOG REQUEST
+     * ==========================================
+     */
 
-        process.env.SUBSCRIPTION_API_URL,
-
-        body,
-
-        { headers }
-
+    console.log(
+        "===================================="
     );
+
+    console.log(
+        "SUBSCRIPTION NOTIFICATION REQUEST"
+    );
+
+    console.log(
+        body
+    );
+
+    console.log(
+        "===================================="
+    );
+
+
+    /*
+     * ==========================================
+     * CALL DOT API
+     * ==========================================
+     */
+
+    const response =
+        await axios.post(
+
+            process.env.SUBSCRIPTION_API_URL,
+
+            body,
+
+            {
+                headers
+            }
+
+        );
+
+
+    /*
+     * ==========================================
+     * LOG RESPONSE
+     * ==========================================
+     */
+
+    console.log(
+        "===================================="
+    );
+
+    console.log(
+        "SUBSCRIPTION NOTIFICATION RESPONSE"
+    );
+
+    console.log(
+        response.data
+    );
+
+    console.log(
+        "===================================="
+    );
+
 
     return response.data;
 
 }
+
 
 module.exports = {
 

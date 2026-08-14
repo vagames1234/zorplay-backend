@@ -16,7 +16,6 @@ router.get("/", async (req, res) => {
     try {
 
         const {
-
             reason_code,
             reason_desc,
             msisdn,
@@ -26,7 +25,6 @@ router.get("/", async (req, res) => {
             partner_txid,
             dot_txid,
             signature
-
         } = req.query;
 
 
@@ -42,6 +40,10 @@ router.get("/", async (req, res) => {
         console.log("dot_txid     :", dot_txid);
         console.log("signature    :", signature);
 
+
+        /*
+         * Generate expected DOT callback signature
+         */
 
         const expectedSignature =
             generateCallbackSignature(
@@ -67,16 +69,79 @@ router.get("/", async (req, res) => {
             );
 
 
-        const signatureValid =
-            expectedSignature === signature;
-
-
         console.log("--------------------------------");
-        console.log("Signature Valid :", signatureValid);
+        console.log(
+            "Expected Signature :",
+            expectedSignature
+        );
+
+        console.log(
+            "Received Signature :",
+            signature
+        );
 
 
         /*
-         * Header Enrichment SUCCESS
+         * Validate DOT signature
+         */
+
+        if (expectedSignature !== signature) {
+
+            console.log(
+                "Invalid DOT callback signature."
+            );
+
+            return res.status(403).send(`
+
+                <html>
+
+                    <head>
+                        <title>Invalid Request</title>
+                    </head>
+
+                    <body>
+
+                        <h2>Invalid Request</h2>
+
+                        <p>
+                            The request could not be verified.
+                        </p>
+
+                    </body>
+
+                </html>
+
+            `);
+
+        }
+
+
+        console.log(
+            "Signature Valid : true"
+        );
+
+
+        /*
+         * ==========================================
+         * HE SUCCESS
+         * ==========================================
+         *
+         * Client Flow:
+         *
+         * Landing Page
+         *      ↓
+         * Subscribe
+         *      ↓
+         * Landing Page API
+         *      ↓
+         * HE Successful
+         *      ↓
+         * User confirms on DOT Landing Page
+         *      ↓
+         * DOT redirects to callback
+         *      ↓
+         * Subscription Notification API
+         *
          */
 
         if (
@@ -85,7 +150,9 @@ router.get("/", async (req, res) => {
             lpTransId
         ) {
 
-            console.log("Header Enrichment Successful");
+            console.log(
+                "Header Enrichment Successful"
+            );
 
             console.log(
                 "Calling Subscription Notification API..."
@@ -95,9 +162,9 @@ router.get("/", async (req, res) => {
             const subscriptionResponse =
                 await subscribeUser({
 
-                    msisdn,
+                    msisdn: msisdn,
 
-                    lpTransId,
+                    lpTransId: lpTransId,
 
                     partnerServiceLink:
                         process.env.PARTNER_SERVICE_LINK
@@ -105,21 +172,85 @@ router.get("/", async (req, res) => {
                 });
 
 
-            return res.send(`
+            console.log(
+                "Subscription Response:",
+                subscriptionResponse
+            );
+
+
+            /*
+             * Check Subscription Notification
+             * response from DOT.
+             */
+
+            if (
+                subscriptionResponse &&
+                String(
+                    subscriptionResponse.errorCode
+                ) === "0"
+            ) {
+
+                return res.send(`
+
+                    <html>
+
+                        <head>
+
+                            <title>
+                                Subscription Result
+                            </title>
+
+                        </head>
+
+                        <body>
+
+                            <h2>
+                                Subscription Successful
+                            </h2>
+
+                            <p>
+                                You have been successfully
+                                subscribed to Zorplay.
+                            </p>
+
+                        </body>
+
+                    </html>
+
+                `);
+
+            }
+
+
+            /*
+             * Subscription Notification failed
+             */
+
+            return res.status(400).send(`
 
                 <html>
 
                     <head>
 
-                        <title>Subscription Result</title>
+                        <title>
+                            Subscription Failed
+                        </title>
 
                     </head>
 
                     <body>
 
-                        <h2>Subscription Successful</h2>
+                        <h2>
+                            Subscription Failed
+                        </h2>
 
-                        <p>You have been successfully subscribed.</p>
+                        <p>
+                            ${
+                                subscriptionResponse?.errorDesc
+                                ||
+                                "Unable to complete subscription."
+                            }
+                        </p>
 
                     </body>
 
@@ -131,60 +262,79 @@ router.get("/", async (req, res) => {
 
 
         /*
- * Header Enrichment FAILED
- *
- * Redirect user to OTP UI
- */
+         * ==========================================
+         * HE FAILURE - MSISDN NOT DETECTED
+         * ==========================================
+         *
+         * Client Flow:
+         *
+         * HE Failure
+         *      ↓
+         * MSISDN could not be retrieved
+         *      ↓
+         * OTP Flow Page
+         *
+         * Client/DOT documented reason code:
+         *
+         * 1012 = MSISDN not detected
+         *
+         */
 
-if (reason_code !== "0") {
+        if (reason_code === "1012") {
 
-    console.log("Header Enrichment Failed");
+            console.log(
+                "Header Enrichment Failed"
+            );
 
-    console.log(
-        "Reason Code :",
-        reason_code
-    );
+            console.log(
+                "Reason Code :",
+                reason_code
+            );
 
-    console.log(
-        "Reason Desc :",
-        reason_desc
-    );
+            console.log(
+                "Reason Desc :",
+                reason_desc
+            );
 
-    console.log(
-        "Redirecting user to OTP Flow"
-    );
+            console.log(
+                "MSISDN was not detected."
+            );
 
-
-    const params =
-        new URLSearchParams({
-
-            reason_code:
-                reason_code || "",
-
-            reason_desc:
-                reason_desc || "",
-
-            msisdn:
-                msisdn || "",
-
-            partner_txid:
-                partner_txid || "",
-
-            dot_txid:
-                dot_txid || ""
-
-        });
+            console.log(
+                "Redirecting user to OTP Flow."
+            );
 
 
-    return res.redirect(
-        `/otp?${params.toString()}`
-    );
+            return res.redirect(
+                "/otp"
+            );
 
-}
+        }
+
 
         /*
-         * Unknown callback
+         * ==========================================
+         * OTHER HE ERROR
+         * ==========================================
+         *
+         * Do NOT redirect other errors to OTP.
+         *
          */
+
+        console.log(
+            "Other Header Enrichment Error"
+        );
+
+        console.log(
+            "Reason Code :",
+            reason_code
+        );
+
+        console.log(
+            "Reason Desc :",
+            reason_desc
+        );
+
 
         return res.status(400).send(`
 
@@ -192,17 +342,23 @@ if (reason_code !== "0") {
 
                 <head>
 
-                    <title>Subscription Error</title>
+                    <title>
+                        Subscription Error
+                    </title>
 
                 </head>
 
                 <body>
 
-                    <h2>Subscription could not be completed</h2>
+                    <h2>
+                        Subscription Could Not Be Completed
+                    </h2>
 
                     <p>
-                        Reason:
-                        ${reason_desc || "Unknown error"}
+                        ${
+                            reason_desc ||
+                            "Unknown error"
+                        }
                     </p>
 
                 </body>
@@ -216,20 +372,39 @@ if (reason_code !== "0") {
     catch (error) {
 
         console.error(
+            "Callback Error:",
             error.response?.data ||
             error.message
         );
 
 
-        res.status(500).json({
+        return res.status(500).send(`
 
-            success: false,
+            <html>
 
-            error:
-                error.response?.data ||
-                error.message
+                <head>
 
-        });
+                    <title>
+                        Server Error
+                    </title>
+
+                </head>
+
+                <body>
+
+                    <h2>
+                        Something went wrong
+                    </h2>
+
+                    <p>
+                        Please try again later.
+                    </p>
+
+                </body>
+
+            </html>
+
+        `);
 
     }
 

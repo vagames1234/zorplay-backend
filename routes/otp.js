@@ -12,7 +12,9 @@ const {
 
 
 /*
- * OTP UI
+ * ==========================================
+ * OTP FLOW PAGE
+ * ==========================================
  */
 
 router.get("/", (req, res) => {
@@ -27,10 +29,16 @@ router.get("/", (req, res) => {
 
     <title>Zorplay OTP Verification</title>
 
-    <meta name="viewport"
-          content="width=device-width, initial-scale=1.0">
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
 
     <style>
+
+        * {
+            box-sizing: border-box;
+        }
 
         body {
 
@@ -71,6 +79,16 @@ router.get("/", (req, res) => {
 
             text-align: center;
 
+            margin-top: 0;
+
+        }
+
+        p {
+
+            color: #555;
+
+            line-height: 1.5;
+
         }
 
         input {
@@ -82,8 +100,6 @@ router.get("/", (req, res) => {
             margin-top: 10px;
 
             margin-bottom: 15px;
-
-            box-sizing: border-box;
 
             border: 1px solid #ccc;
 
@@ -117,11 +133,15 @@ router.get("/", (req, res) => {
 
             background: #999;
 
+            cursor: not-allowed;
+
         }
 
         #pinSection {
 
             display: none;
+
+            margin-top: 20px;
 
         }
 
@@ -130,6 +150,18 @@ router.get("/", (req, res) => {
             margin-top: 15px;
 
             text-align: center;
+
+        }
+
+        .success {
+
+            color: green;
+
+        }
+
+        .error {
+
+            color: red;
 
         }
 
@@ -143,70 +175,66 @@ router.get("/", (req, res) => {
 
 <div class="container">
 
-    <h2>Verify Your Mobile Number</h2>
+
+    <h2>
+        Verify Your Mobile Number
+    </h2>
 
 
     <p>
-        Enter your Moov Gabon mobile number.
+        Enter your Moov Gabon mobile number
+        to continue your subscription.
     </p>
 
 
+    <!-- MSISDN -->
+
     <input
-
         id="msisdn"
-
         type="text"
-
+        inputmode="numeric"
         placeholder="Example: 241XXXXXXXX"
-
-    />
+    >
 
 
     <button
-
         id="sendButton"
-
         onclick="sendPin()"
-
     >
-
-        Send PIN
-
+        Send OTP
     </button>
 
+
+    <!-- PIN -->
 
     <div id="pinSection">
 
         <p>
-            A PIN has been sent to your mobile number.
+            A PIN has been sent to your
+            mobile number by SMS.
         </p>
 
 
         <input
-
             id="pin"
-
             type="text"
-
+            inputmode="numeric"
             placeholder="Enter PIN"
-
-        />
+        >
 
 
         <button
-
-            onclick="subscribe()"
-
+            id="confirmButton"
+            onclick="confirmPin()"
         >
-
-            Confirm Subscription
-
+            Confirm PIN
         </button>
 
     </div>
 
 
     <div id="message"></div>
+
 
 </div>
 
@@ -220,19 +248,26 @@ let currentMsisdn = null;
 
 
 /*
- * Send PIN
+ * ==========================================
+ * SEND PIN
+ * ==========================================
  */
 
 async function sendPin() {
 
+
     const msisdn =
-        document.getElementById("msisdn").value.trim();
+        document
+            .getElementById("msisdn")
+            .value
+            .trim();
 
 
     if (!msisdn) {
 
         showMessage(
-            "Please enter your mobile number."
+            "Please enter your mobile number.",
+            false
         );
 
         return;
@@ -243,34 +278,46 @@ async function sendPin() {
     currentMsisdn = msisdn;
 
 
-    document.getElementById(
-        "sendButton"
-    ).disabled = true;
+    const sendButton =
+        document.getElementById(
+            "sendButton"
+        );
+
+
+    sendButton.disabled = true;
+
+
+    showMessage(
+        "Sending PIN...",
+        true
+    );
 
 
     try {
 
-        const response = await fetch(
-            "/otp/send",
-            {
 
-                method: "POST",
+        const response =
+            await fetch(
+                "/otp/send",
+                {
 
-                headers: {
+                    method: "POST",
 
-                    "Content-Type":
-                        "application/json"
+                    headers: {
 
-                },
+                        "Content-Type":
+                            "application/json"
 
-                body: JSON.stringify({
+                    },
 
-                    msisdn: msisdn
+                    body: JSON.stringify({
 
-                })
+                        msisdn: msisdn
 
-            }
-        );
+                    })
+
+                }
+            );
 
 
         const data =
@@ -278,16 +325,23 @@ async function sendPin() {
 
 
         console.log(
-            "OTP SEND RESPONSE:",
+            "SEND PIN RESPONSE:",
             data
         );
 
 
+        /*
+         * Send PIN success
+         *
+         * resultCode = 0
+         */
+
         if (
             data &&
-            data.resultCode === "0" &&
+            String(data.resultCode) === "0" &&
             data.otpId
         ) {
+
 
             otpId = data.otpId;
 
@@ -298,38 +352,53 @@ async function sendPin() {
 
 
             showMessage(
-                "PIN sent successfully."
-            );
-
-        }
-
-        else {
-
-            showMessage(
-                "Unable to send PIN. Please try again."
+                "PIN sent successfully. Please check your SMS.",
+                true
             );
 
 
-            document.getElementById(
-                "sendButton"
-            ).disabled = false;
+            return;
 
         }
+
+
+        /*
+         * Send PIN failed
+         */
+
+        let message =
+            data?.resultDesc ||
+            data?.message ||
+            "Unable to send PIN. Please try again.";
+
+
+        showMessage(
+            message,
+            false
+        );
+
+
+        sendButton.disabled = false;
+
 
     }
 
     catch (error) {
 
-        console.error(error);
 
-        showMessage(
-            "Something went wrong."
+        console.error(
+            "SEND PIN ERROR:",
+            error
         );
 
 
-        document.getElementById(
-            "sendButton"
-        ).disabled = false;
+        showMessage(
+            "Unable to send PIN. Please try again.",
+            false
+        );
+
+
+        sendButton.disabled = false;
 
     }
 
@@ -337,35 +406,43 @@ async function sendPin() {
 
 
 /*
- * Subscription
+ * ==========================================
+ * CONFIRM PIN
+ * ==========================================
  *
- * DOT instructed:
- * Send PIN → Subscription API
+ * According to our client's required flow:
  *
- * No /otp/check call.
+ * Enter PIN
+ *      ↓
+ * Confirm PIN
+ *      ↓
+ * Subscription Notification API
+ *
+ * We therefore send:
+ *
+ * msisdn
+ * otpId
+ * otpPIN
+ *
+ * to /subscribe.
+ *
  */
 
-async function subscribe() {
+async function confirmPin() {
+
 
     const pin =
-        document.getElementById("pin").value.trim();
-
-
-    if (!pin) {
-
-        showMessage(
-            "Please enter the PIN."
-        );
-
-        return;
-
-    }
+        document
+            .getElementById("pin")
+            .value
+            .trim();
 
 
     if (!otpId) {
 
         showMessage(
-            "Please request the PIN first."
+            "Please request the PIN first.",
+            false
         );
 
         return;
@@ -373,36 +450,65 @@ async function subscribe() {
     }
 
 
+    if (!pin) {
+
+        showMessage(
+            "Please enter the PIN.",
+            false
+        );
+
+        return;
+
+    }
+
+
+    const confirmButton =
+        document.getElementById(
+            "confirmButton"
+        );
+
+
+    confirmButton.disabled = true;
+
+
+    showMessage(
+        "Confirming subscription...",
+        true
+    );
+
+
     try {
 
-        const response = await fetch(
-            "/subscribe",
-            {
 
-                method: "POST",
+        const response =
+            await fetch(
+                "/subscribe",
+                {
 
-                headers: {
+                    method: "POST",
 
-                    "Content-Type":
-                        "application/json"
+                    headers: {
 
-                },
+                        "Content-Type":
+                            "application/json"
 
-                body: JSON.stringify({
+                    },
 
-                    msisdn:
-                        currentMsisdn,
+                    body: JSON.stringify({
 
-                    otpId:
-                        otpId,
+                        msisdn:
+                            currentMsisdn,
 
-                    otpPIN:
-                        pin
+                        otpId:
+                            otpId,
 
-                })
+                        otpPIN:
+                            pin
 
-            }
-        );
+                    })
+
+                }
+            );
 
 
         const data =
@@ -415,44 +521,98 @@ async function subscribe() {
         );
 
 
+        /*
+         * Our backend returns:
+         *
+         * success: true
+         *
+         * only when the Subscription
+         * Notification API succeeds.
+         */
+
         if (data.success) {
 
-            document.getElementById(
-                "message"
-            ).innerText =
-                "Subscription successful.";
+
+            showMessage(
+                "Subscription successful.",
+                true
+            );
+
+
+            return;
 
         }
 
-        else {
 
-            document.getElementById(
-                "message"
-            ).innerText =
-                "Subscription failed.";
+        /*
+         * Subscription failed
+         */
 
-        }
+        const errorMessage =
+            data?.response?.errorDesc ||
+            data?.error?.errorDesc ||
+            data?.message ||
+            "Subscription failed.";
+
+
+        showMessage(
+            errorMessage,
+            false
+        );
+
+
+        confirmButton.disabled = false;
+
 
     }
 
     catch (error) {
 
-        console.error(error);
+
+        console.error(
+            "SUBSCRIPTION ERROR:",
+            error
+        );
+
 
         showMessage(
-            "Subscription request failed."
+            "Subscription request failed. Please try again.",
+            false
         );
+
+
+        confirmButton.disabled = false;
 
     }
 
 }
 
 
-function showMessage(message) {
+/*
+ * ==========================================
+ * MESSAGE
+ * ==========================================
+ */
 
-    document.getElementById(
-        "message"
-    ).innerText = message;
+function showMessage(
+    message,
+    success
+) {
+
+    const messageElement =
+        document.getElementById(
+            "message"
+        );
+
+
+    messageElement.innerText =
+        message;
+
+
+    messageElement.className =
+        success
+            ? "success"
+            : "error";
 
 }
 
@@ -470,7 +630,9 @@ function showMessage(message) {
 
 
 /*
- * Send OTP
+ * ==========================================
+ * SEND PIN API
+ * ==========================================
  */
 
 router.post("/send", async (req, res) => {
@@ -496,23 +658,50 @@ router.post("/send", async (req, res) => {
         }
 
 
+        console.log(
+            "================================"
+        );
+
+        console.log(
+            "OTP SEND REQUEST"
+        );
+
+        console.log(
+            "MSISDN:",
+            msisdn
+        );
+
+        console.log(
+            "================================"
+        );
+
+
         const response =
             await sendOtp(msisdn);
 
 
-        res.json(response);
+        console.log(
+            "OTP SEND RESPONSE:",
+            response
+        );
+
+
+        return res.json(
+            response
+        );
 
     }
 
     catch (error) {
 
         console.error(
+            "OTP SEND ERROR:",
             error.response?.data ||
             error.message
         );
 
 
-        res.status(500).json({
+        return res.status(500).json({
 
             success: false,
 

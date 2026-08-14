@@ -14,31 +14,33 @@ router.post("/", async (req, res) => {
         const {
             msisdn,
             lpTransId,
-            partnerServiceLink,
             otpId,
             otpPIN
         } = req.body;
 
 
+        console.log("================================");
+        console.log("SUBSCRIPTION REQUEST");
+        console.log("msisdn    :", msisdn);
+        console.log("lpTransId :", lpTransId);
+        console.log("otpId     :", otpId);
+        console.log("otpPIN    :", otpPIN ? "******" : "");
+        console.log("================================");
+
+
         /*
          * ==========================================
-         * OTP FLOW
+         * HE FLOW
          * ==========================================
          *
-         * DOT instructed:
+         * Required:
          *
-         * sendPin
-         *     ↓
-         * receive otpId
-         *     ↓
-         * user enters PIN
-         *     ↓
-         * Subscription Notification API
+         * msisdn
+         * lpTransId
          *
-         * No OTP check API.
          */
 
-        if (otpId && otpPIN) {
+        if (lpTransId) {
 
             if (!msisdn) {
 
@@ -47,75 +49,145 @@ router.post("/", async (req, res) => {
                     success: false,
 
                     message:
-                        "msisdn is required for OTP subscription."
+                        "msisdn is required for HE flow."
 
                 });
 
             }
 
-
-            console.log("====================================");
-            console.log("OTP SUBSCRIPTION REQUEST");
-            console.log("msisdn :", msisdn);
-            console.log("otpId  :", otpId);
-            console.log("====================================");
+        }
 
 
-            const result = await subscribeUser({
+        /*
+         * ==========================================
+         * OTP FLOW
+         * ==========================================
+         *
+         * Required:
+         *
+         * msisdn
+         * otpId
+         * otpPIN
+         *
+         */
+
+        if (otpId || otpPIN) {
+
+            if (
+                !msisdn ||
+                !otpId ||
+                !otpPIN
+            ) {
+
+                return res.status(400).json({
+
+                    success: false,
+
+                    message:
+                        "msisdn, otpId and otpPIN are required for OTP flow."
+
+                });
+
+            }
+
+        }
+
+
+        /*
+         * ==========================================
+         * AT LEAST ONE FLOW MUST BE PROVIDED
+         * ==========================================
+         */
+
+        if (!lpTransId && !otpId) {
+
+            return res.status(400).json({
+
+                success: false,
+
+                message:
+                    "Either lpTransId or otpId is required."
+
+            });
+
+        }
+
+
+        /*
+         * ==========================================
+         * PREVENT MIXING BOTH FLOWS
+         * ==========================================
+         *
+         * We should receive either:
+         *
+         * HE:
+         * msisdn + lpTransId
+         *
+         * OR
+         *
+         * OTP:
+         * msisdn + otpId + otpPIN
+         *
+         */
+
+        if (lpTransId && (otpId || otpPIN)) {
+
+            return res.status(400).json({
+
+                success: false,
+
+                message:
+                    "HE flow and OTP flow cannot be used together."
+
+            });
+
+        }
+
+
+        /*
+         * ==========================================
+         * CALL SUBSCRIPTION NOTIFICATION API
+         * ==========================================
+         */
+
+        const result =
+            await subscribeUser({
 
                 msisdn,
+                lpTransId,
                 otpId,
                 otpPIN
 
             });
 
 
-            return res.json({
-
-                success: true,
-
-                flow: "OTP",
-
-                response: result
-
-            });
-
-        }
+        console.log("================================");
+        console.log(
+            "SUBSCRIPTION NOTIFICATION RESPONSE"
+        );
+        console.log(result);
+        console.log("================================");
 
 
         /*
          * ==========================================
-         * HEADER ENRICHMENT FLOW
+         * DOT SUCCESS
          * ==========================================
+         *
+         * Subscription Notification API:
+         *
+         * errorCode = 0
+         *
          */
 
-        if (msisdn && lpTransId) {
-
-            console.log("====================================");
-            console.log("HE SUBSCRIPTION REQUEST");
-            console.log("msisdn    :", msisdn);
-            console.log("lpTransId :", lpTransId);
-            console.log("====================================");
-
-
-            const result = await subscribeUser({
-
-                msisdn,
-
-                lpTransId,
-
-                partnerServiceLink:
-                    partnerServiceLink ||
-                    process.env.PARTNER_SERVICE_LINK
-
-            });
-
+        if (
+            result &&
+            String(result.errorCode) === "0"
+        ) {
 
             return res.json({
 
                 success: true,
-
-                flow: "HE",
 
                 response: result
 
@@ -126,7 +198,7 @@ router.post("/", async (req, res) => {
 
         /*
          * ==========================================
-         * INVALID REQUEST
+         * DOT SUBSCRIPTION ERROR
          * ==========================================
          */
 
@@ -134,8 +206,7 @@ router.post("/", async (req, res) => {
 
             success: false,
 
-            message:
-                "Invalid subscription request."
+            response: result
 
         });
 

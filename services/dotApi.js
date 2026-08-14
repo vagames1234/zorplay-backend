@@ -49,7 +49,9 @@ function buildLandingUrl(partnerTxId, signature) {
 
         rurl: process.env.RETURN_URL,
 
-        lang: process.env.LANG,
+      //  lang: process.env.LANG,
+
+          lang: "en",
 
         signature: signature
 
