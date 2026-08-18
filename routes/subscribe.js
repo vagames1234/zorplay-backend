@@ -148,15 +148,24 @@ router.post("/", async (req, res) => {
          * ==========================================
          * CALL SUBSCRIPTION NOTIFICATION API
          * ==========================================
+         *
+         * partnerServiceLink is required by DOT.
+         *
          */
 
         const result =
             await subscribeUser({
 
                 msisdn,
+
                 lpTransId,
+
                 otpId,
-                otpPIN
+
+                otpPIN,
+
+                partnerServiceLink:
+                    process.env.PARTNER_SERVICE_LINK
 
             });
 
@@ -211,6 +220,7 @@ router.post("/", async (req, res) => {
         });
 
     }
+
 
     catch (error) {
 

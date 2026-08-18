@@ -47,20 +47,23 @@ async function subscribeUser(data) {
 
     const body = {
 
-        msisdn:
-            data.msisdn,
+    msisdn:
+        data.msisdn,
 
-        serviceId:
-            process.env.SERVICE_ID,
+    serviceId:
+        process.env.SERVICE_ID,
 
-        opId:
-            Number(process.env.OP_ID),
+    opId:
+        Number(process.env.OP_ID),
 
-        action:
-            1
+    action:
+        1,
 
-    };
+    partnerServiceLink:
+        data.partnerServiceLink ||
+        process.env.PARTNER_SERVICE_LINK
 
+};
 
     /*
      * ==========================================
