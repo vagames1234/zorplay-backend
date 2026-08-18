@@ -15,76 +15,127 @@ router.get("/", async (req, res) => {
 
     try {
 
-       const {
-    reason_code,
-    reason_desc,
-    msisdn,
-    lpTransId,
-    service_id,
-    op_id,
-    partner_txid,
-    dot_txid,
-    sginature
-} = req.query;
+        /*
+         * ==========================================
+         * READ DOT CALLBACK PARAMETERS
+         * ==========================================
+         *
+         * IMPORTANT:
+         * Moov sends the callback signature
+         * parameter as "sginature" (not "signature").
+         */
 
-console.log("================================");
-console.log("DOT CALLBACK");
-console.log("reason_code  :", reason_code);
-console.log("reason_desc  :", reason_desc);
-console.log("msisdn       :", msisdn);
-console.log("lpTransId    :", lpTransId);
-console.log("service_id   :", service_id);
-console.log("op_id        :", op_id);
-console.log("partner_txid :", partner_txid);
-console.log("dot_txid     :", dot_txid);
-console.log("sginature    :", sginature);
+        const {
+            reason_code,
+            reason_desc,
+            msisdn,
+            lpTransId,
+            service_id,
+            op_id,
+            partner_txid,
+            dot_txid,
+            sginature
+        } = req.query;
 
 
-const expectedSignature =
-    generateCallbackSignature(
-        process.env.USERNAME,
-        reason_code || "",
-        reason_desc || "",
-        msisdn || "",
-        service_id || "",
-        op_id || "",
-        partner_txid || "",
-        dot_txid || "",
-        process.env.PASSWORD
-    );
+        /*
+         * ==========================================
+         * LOG DOT CALLBACK
+         * ==========================================
+         */
 
-console.log("--------------------------------");
-console.log(
-    "Expected Signature :",
-    expectedSignature
-);
-
-console.log(
-    "Received Signature :",
-    sginature
-);
+        console.log("================================");
+        console.log("DOT CALLBACK");
+        console.log("reason_code  :", reason_code);
+        console.log("reason_desc  :", reason_desc);
+        console.log("msisdn       :", msisdn);
+        console.log("lpTransId    :", lpTransId);
+        console.log("service_id   :", service_id);
+        console.log("op_id        :", op_id);
+        console.log("partner_txid :", partner_txid);
+        console.log("dot_txid     :", dot_txid);
+        console.log("sginature    :", sginature);
 
 
-if (expectedSignature !== sginature) {
+        /*
+         * ==========================================
+         * GENERATE EXPECTED CALLBACK SIGNATURE
+         * ==========================================
+         */
 
-    console.log(
-        "Invalid DOT callback signature."
-    );
+        const expectedSignature =
+            generateCallbackSignature(
 
-    return res.status(403).send(`
-        <html>
-            <head>
-                <title>Invalid Request</title>
-            </head>
-            <body>
-                <h2>Invalid Request</h2>
-                <p>
-                    The request could not be verified.
-                </p>
-            </body>
-        </html>
-    `);
-}
+                process.env.USERNAME,
+
+                reason_code || "",
+
+                reason_desc || "",
+
+                msisdn || "",
+
+                service_id || "",
+
+                op_id || "",
+
+                partner_txid || "",
+
+                dot_txid || "",
+
+                process.env.PASSWORD
+
+            );
+
+
+        console.log("--------------------------------");
+
+        console.log(
+            "Expected Signature :",
+            expectedSignature
+        );
+
+        console.log(
+            "Received Signature :",
+            sginature
+        );
+
+
+        /*
+         * ==========================================
+         * VALIDATE CALLBACK SIGNATURE
+         * ==========================================
+         */
+
+        if (expectedSignature !== sginature) {
+
+            console.log(
+                "Invalid DOT callback signature."
+            );
+
+            return res.status(403).send(`
+
+                <html>
+
+                    <head>
+                        <title>Invalid Request</title>
+                    </head>
+
+                    <body>
+
+                        <h2>
+                            Invalid Request
+                        </h2>
+
+                        <p>
+                            The request could not be verified.
+                        </p>
+
+                    </body>
+
+                </html>
+
+            `);
+        }
 
 
         console.log(
@@ -97,22 +148,21 @@ if (expectedSignature !== sginature) {
          * HE SUCCESS
          * ==========================================
          *
-         * Client Flow:
+         * reason_code = 0
+         *
+         * Flow:
          *
          * Landing Page
          *      ↓
-         * Subscribe
+         * DOT HE
          *      ↓
-         * Landing Page API
+         * HE successful
          *      ↓
-         * HE Successful
+         * DOT callback
          *      ↓
-         * User confirms on DOT Landing Page
-         *      ↓
-         * DOT redirects to callback
+         * Validate signature
          *      ↓
          * Subscription Notification API
-         *
          */
 
         if (
@@ -129,6 +179,12 @@ if (expectedSignature !== sginature) {
                 "Calling Subscription Notification API..."
             );
 
+
+            /*
+             * ==========================================
+             * CALL SUBSCRIPTION NOTIFICATION API
+             * ==========================================
+             */
 
             const subscriptionResponse =
                 await subscribeUser({
@@ -150,8 +206,9 @@ if (expectedSignature !== sginature) {
 
 
             /*
-             * Check Subscription Notification
-             * response from DOT.
+             * ==========================================
+             * SUBSCRIPTION SUCCESS
+             * ==========================================
              */
 
             if (
@@ -189,12 +246,13 @@ if (expectedSignature !== sginature) {
                     </html>
 
                 `);
-
             }
 
 
             /*
-             * Subscription Notification failed
+             * ==========================================
+             * SUBSCRIPTION FAILED
+             * ==========================================
              */
 
             return res.status(400).send(`
@@ -232,44 +290,61 @@ if (expectedSignature !== sginature) {
         }
 
 
-        /* 
- * ==========================================
- * HE FAILURE
- * ==========================================
- *
- * Client requirement:
- *
- * reason_code = 0
- *      -> HE successful
- *
- * reason_code != 0
- *      -> Redirect to OTP flow
- *
- */
+        /*
+         * ==========================================
+         * HE FAILURE
+         * ==========================================
+         *
+         * Moov requirement:
+         *
+         * reason_code = 0
+         *      → HE successful
+         *
+         * reason_code != 0
+         *      → Redirect user to OTP flow
+         *
+         * Examples:
+         *
+         * 1017 → Invalid User IP
+         * 1012 → MSISDN not detected
+         * etc.
+         *
+         * Any non-zero reason_code goes to OTP.
+         */
 
-if (reason_code !== "0") {
+        if (reason_code !== "0") {
 
-    console.log(
-        "Header Enrichment Failed"
-    );
+            console.log(
+                "Header Enrichment Failed"
+            );
 
-    console.log(
-        "Reason Code :",
-        reason_code
-    );
+            console.log(
+                "Reason Code :",
+                reason_code
+            );
 
-    console.log(
-        "Reason Desc :",
-        reason_desc
-    );
+            console.log(
+                "Reason Desc :",
+                reason_desc
+            );
 
-    console.log(
-        "Redirecting user to OTP Flow."
-    );
+            console.log(
+                "Redirecting user to OTP Flow."
+            );
 
-    return res.redirect("/otp");
-}
 
+            return res.redirect(
+                "/otp"
+            );
+
+        }
+
+
+        /*
+         * ==========================================
+         * UNEXPECTED CONDITION
+         * ==========================================
+         */
 
         return res.status(400).send(`
 
@@ -304,7 +379,14 @@ if (reason_code !== "0") {
 
     }
 
+
     catch (error) {
+
+        /*
+         * ==========================================
+         * CALLBACK ERROR
+         * ==========================================
+         */
 
         console.error(
             "Callback Error:",
