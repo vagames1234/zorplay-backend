@@ -15,105 +15,76 @@ router.get("/", async (req, res) => {
 
     try {
 
-        const {
-            reason_code,
-            reason_desc,
-            msisdn,
-            lpTransId,
-            service_id,
-            op_id,
-            partner_txid,
-            dot_txid,
-            signature
-        } = req.query;
+       const {
+    reason_code,
+    reason_desc,
+    msisdn,
+    lpTransId,
+    service_id,
+    op_id,
+    partner_txid,
+    dot_txid,
+    sginature
+} = req.query;
+
+console.log("================================");
+console.log("DOT CALLBACK");
+console.log("reason_code  :", reason_code);
+console.log("reason_desc  :", reason_desc);
+console.log("msisdn       :", msisdn);
+console.log("lpTransId    :", lpTransId);
+console.log("service_id   :", service_id);
+console.log("op_id        :", op_id);
+console.log("partner_txid :", partner_txid);
+console.log("dot_txid     :", dot_txid);
+console.log("sginature    :", sginature);
 
 
-        console.log("================================");
-        console.log("DOT CALLBACK");
-        console.log("reason_code  :", reason_code);
-        console.log("reason_desc  :", reason_desc);
-        console.log("msisdn       :", msisdn);
-        console.log("lpTransId    :", lpTransId);
-        console.log("service_id   :", service_id);
-        console.log("op_id        :", op_id);
-        console.log("partner_txid :", partner_txid);
-        console.log("dot_txid     :", dot_txid);
-        console.log("signature    :", signature);
+const expectedSignature =
+    generateCallbackSignature(
+        process.env.USERNAME,
+        reason_code || "",
+        reason_desc || "",
+        msisdn || "",
+        service_id || "",
+        op_id || "",
+        partner_txid || "",
+        dot_txid || "",
+        process.env.PASSWORD
+    );
+
+console.log("--------------------------------");
+console.log(
+    "Expected Signature :",
+    expectedSignature
+);
+
+console.log(
+    "Received Signature :",
+    sginature
+);
 
 
-        /*
-         * Generate expected DOT callback signature
-         */
+if (expectedSignature !== sginature) {
 
-        const expectedSignature =
-            generateCallbackSignature(
+    console.log(
+        "Invalid DOT callback signature."
+    );
 
-                process.env.USERNAME,
-
-                reason_code || "",
-
-                reason_desc || "",
-
-                msisdn || "",
-
-                service_id || "",
-
-                op_id || "",
-
-                partner_txid || "",
-
-                dot_txid || "",
-
-                process.env.PASSWORD
-
-            );
-
-
-        console.log("--------------------------------");
-        console.log(
-            "Expected Signature :",
-            expectedSignature
-        );
-
-        console.log(
-            "Received Signature :",
-            signature
-        );
-
-
-        /*
-         * Validate DOT signature
-         */
-
-        if (expectedSignature !== signature) {
-
-            console.log(
-                "Invalid DOT callback signature."
-            );
-
-            return res.status(403).send(`
-
-                <html>
-
-                    <head>
-                        <title>Invalid Request</title>
-                    </head>
-
-                    <body>
-
-                        <h2>Invalid Request</h2>
-
-                        <p>
-                            The request could not be verified.
-                        </p>
-
-                    </body>
-
-                </html>
-
-            `);
-
-        }
+    return res.status(403).send(`
+        <html>
+            <head>
+                <title>Invalid Request</title>
+            </head>
+            <body>
+                <h2>Invalid Request</h2>
+                <p>
+                    The request could not be verified.
+                </p>
+            </body>
+        </html>
+    `);
+}
 
 
         console.log(
@@ -261,79 +232,43 @@ router.get("/", async (req, res) => {
         }
 
 
-        /*
-         * ==========================================
-         * HE FAILURE - MSISDN NOT DETECTED
-         * ==========================================
-         *
-         * Client Flow:
-         *
-         * HE Failure
-         *      ↓
-         * MSISDN could not be retrieved
-         *      ↓
-         * OTP Flow Page
-         *
-         * Client/DOT documented reason code:
-         *
-         * 1012 = MSISDN not detected
-         *
-         */
+        /* 
+ * ==========================================
+ * HE FAILURE
+ * ==========================================
+ *
+ * Client requirement:
+ *
+ * reason_code = 0
+ *      -> HE successful
+ *
+ * reason_code != 0
+ *      -> Redirect to OTP flow
+ *
+ */
 
-        if (reason_code === "1012") {
+if (reason_code !== "0") {
 
-            console.log(
-                "Header Enrichment Failed"
-            );
+    console.log(
+        "Header Enrichment Failed"
+    );
 
-            console.log(
-                "Reason Code :",
-                reason_code
-            );
+    console.log(
+        "Reason Code :",
+        reason_code
+    );
 
-            console.log(
-                "Reason Desc :",
-                reason_desc
-            );
+    console.log(
+        "Reason Desc :",
+        reason_desc
+    );
 
-            console.log(
-                "MSISDN was not detected."
-            );
+    console.log(
+        "Redirecting user to OTP Flow."
+    );
 
-            console.log(
-                "Redirecting user to OTP Flow."
-            );
-
-
-            return res.redirect(
-                "/otp"
-            );
-
-        }
-
-
-        /*
-         * ==========================================
-         * OTHER HE ERROR
-         * ==========================================
-         *
-         * Do NOT redirect other errors to OTP.
-         *
-         */
-
-        console.log(
-            "Other Header Enrichment Error"
-        );
-
-        console.log(
-            "Reason Code :",
-            reason_code
-        );
-
-        console.log(
-            "Reason Desc :",
-            reason_desc
-        );
+    return res.redirect("/otp");
+}
 
 
         return res.status(400).send(`
