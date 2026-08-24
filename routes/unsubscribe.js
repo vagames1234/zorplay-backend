@@ -50,11 +50,7 @@ router.post("/", async (req, res) => {
          */
 
         const result =
-            await unsubscribeUser({
-
-                msisdn
-
-            });
+            await unsubscribeUser(msisdn);
 
 
         console.log("================================");
