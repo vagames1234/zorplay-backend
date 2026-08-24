@@ -41,7 +41,7 @@ async function sendOtp(msisdn) {
 
         partnerTransId: generatePartnerTransId(),
 
-        amount: 1,
+        amount: 150,
 
         otpMessage: "Your OTP is ##"
 
