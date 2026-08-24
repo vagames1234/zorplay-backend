@@ -23,8 +23,11 @@ router.post("/", async (req, res) => {
 
 
         /*
-         * Validate MSISDN
+         * ==========================================
+         * VALIDATION
+         * ==========================================
          */
+
         if (!msisdn) {
 
             return res.status(400).json({
@@ -40,23 +43,34 @@ router.post("/", async (req, res) => {
 
 
         /*
-         * Call DOT Unsubscription API
+         * ==========================================
+         * CALL SUBSCRIPTION NOTIFICATION API
+         * WITH ACTION = 2
+         * ==========================================
          */
+
         const result =
-            await unsubscribeUser(msisdn);
+            await unsubscribeUser({
+
+                msisdn
+
+            });
 
 
         console.log("================================");
         console.log(
-            "UNSUBSCRIPTION RESULT"
+            "UNSUBSCRIPTION RESPONSE"
         );
         console.log(result);
         console.log("================================");
 
 
         /*
+         * ==========================================
          * DOT SUCCESS
+         * ==========================================
          */
+
         if (
             result &&
             String(result.errorCode) === "0"
@@ -66,11 +80,7 @@ router.post("/", async (req, res) => {
 
                 success: true,
 
-                message:
-                    "MSISDN unsubscribed successfully.",
-
-                response:
-                    result
+                response: result
 
             });
 
@@ -78,17 +88,16 @@ router.post("/", async (req, res) => {
 
 
         /*
+         * ==========================================
          * DOT ERROR
+         * ==========================================
          */
+
         return res.status(400).json({
 
             success: false,
 
-            message:
-                "Unsubscription failed.",
-
-            response:
-                result
+            response: result
 
         });
 

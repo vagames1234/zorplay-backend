@@ -35,6 +35,8 @@ app.use("/billing", billingRoute);
 
 app.use("/subscribe", subscribeRoute);
 
+app.use("/unsubscribe", unsubscribeRoute);
+
 app.use(
     "/subscribe-page",
     subscribePageRoute
