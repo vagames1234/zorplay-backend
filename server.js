@@ -14,6 +14,9 @@ const otpRoute = require("./routes/otp");
 const subscribePageRoute =
     require("./routes/subscribePage");
 
+    const unsubscribeRoute =
+    require("./routes/unsubscribe");
+
 const billingRoute = require("./routes/billing");
 
 const app = express();
