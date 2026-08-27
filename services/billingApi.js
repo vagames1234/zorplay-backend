@@ -37,19 +37,23 @@ async function chargeUser({
 
     };
 
-    const body = {
+   const body = {
 
-        partnerTransId: generatePartnerTransId(),
+    partnerTransId:
+        generatePartnerTransId(),
 
-        opId: Number(process.env.OP_ID),
+    opId:
+        Number(process.env.OP_ID),
 
-        msisdn,
+    msisdn,
 
-        amount,
+    amount:
+        String(amount),
 
-        serviceId: process.env.SERVICE_ID
+    serviceId:
+        process.env.SERVICE_ID
 
-    };
+};
 
     console.log("================================");
     console.log("DIRECT BILLING REQUEST");
