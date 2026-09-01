@@ -55,7 +55,7 @@ router.post("/", async (req, res) => {
             commandType,
             msisdn,
             source,
-            keyWord
+            keyword
         } = req.body;
 
 

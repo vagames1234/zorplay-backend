@@ -69,9 +69,7 @@ async function subscribeUser(data) {
         action:
             1,
 
-        partnerServiceLink:
-            data.partnerServiceLink ||
-            process.env.PARTNER_SERVICE_LINK
+       
 
     };
 
