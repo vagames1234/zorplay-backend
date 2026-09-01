@@ -19,6 +19,9 @@ const subscribePageRoute =
 
 const billingRoute = require("./routes/billing");
 
+const customerCareRoute =
+    require("./routes/customerCare");
+
 const app = express();
 
 app.use(cors());
@@ -40,6 +43,11 @@ app.use("/unsubscribe", unsubscribeRoute);
 app.use(
     "/subscribe-page",
     subscribePageRoute
+);
+
+app.use(
+    "/customer-care",
+    customerCareRoute
 );
 
 app.get("/", (req, res) => {
