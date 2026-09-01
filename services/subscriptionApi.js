@@ -1,205 +1,3 @@
-// const axios = require("axios");
-
-
-// /*
-//  * ==========================================
-//  * SUBSCRIPTION NOTIFICATION API
-//  * ==========================================
-//  */
-
-// async function subscribeUser(data) {
-
-
-//     /*
-//      * Basic Authentication
-//      */
-
-//     const auth =
-//         Buffer.from(
-//             `${process.env.USERNAME}:${process.env.PASSWORD}`
-//         ).toString("base64");
-
-
-//     /*
-//      * Request Headers
-//      */
-
-//     const headers = {
-
-//         Authorization:
-//             `Basic ${auth}`,
-
-//         PartnerId:
-//             process.env.PARTNER_ID,
-
-//         "Content-Type":
-//             "application/json",
-
-//         Accept:
-//             "application/json"
-
-//     };
-
-
-//     /*
-//      * Common fields
-//      */
-
-//     const body = {
-
-//     msisdn:
-//         data.msisdn,
-
-//     serviceId:
-//         process.env.SERVICE_ID,
-
-//     opId:
-//         Number(process.env.OP_ID),
-
-//     action:
-//         1,
-
-//     partnerServiceLink:
-//         data.partnerServiceLink ||
-//         process.env.PARTNER_SERVICE_LINK
-
-// };
-
-//     /*
-//      * ==========================================
-//      * HE FLOW
-//      * ==========================================
-//      *
-//      * Landing Page API returns lpTransId.
-//      *
-//      * Client requirement:
-//      *
-//      * msisdn
-//      * serviceId
-//      * opId
-//      * action
-//      * lpTransId
-//      *
-//      */
-
-//     if (data.lpTransId) {
-
-//         body.lpTransId =
-//             data.lpTransId;
-
-//     }
-
-
-//     /*
-//      * ==========================================
-//      * OTP FLOW
-//      * ==========================================
-//      *
-//      * Client requirement:
-//      *
-//      * msisdn
-//      * serviceId
-//      * opId
-//      * action
-//      * otpId
-//      * otpPIN
-//      *
-//      */
-
-//     if (data.otpId) {
-
-//         body.otpId =
-//             data.otpId;
-
-//     }
-
-
-//     if (data.otpPIN) {
-
-//         body.otpPIN =
-//             data.otpPIN;
-
-//     }
-
-
-//     /*
-//      * ==========================================
-//      * LOG REQUEST
-//      * ==========================================
-//      */
-
-//     console.log(
-//         "===================================="
-//     );
-
-//     console.log(
-//         "SUBSCRIPTION NOTIFICATION REQUEST"
-//     );
-
-//     console.log(
-//         body
-//     );
-
-//     console.log(
-//         "===================================="
-//     );
-
-
-//     /*
-//      * ==========================================
-//      * CALL DOT API
-//      * ==========================================
-//      */
-
-//     const response =
-//         await axios.post(
-
-//             process.env.SUBSCRIPTION_API_URL,
-
-//             body,
-
-//             {
-//                 headers
-//             }
-
-//         );
-
-
-//     /*
-//      * ==========================================
-//      * LOG RESPONSE
-//      * ==========================================
-//      */
-
-//     console.log(
-//         "===================================="
-//     );
-
-//     console.log(
-//         "SUBSCRIPTION NOTIFICATION RESPONSE"
-//     );
-
-//     console.log(
-//         response.data
-//     );
-
-//     console.log(
-//         "===================================="
-//     );
-
-
-//     return response.data;
-
-// }
-
-
-// module.exports = {
-
-//     subscribeUser
-
-// };
-
-
 const axios = require("axios");
 
 
@@ -215,7 +13,9 @@ const axios = require("axios");
 async function subscribeUser(data) {
 
     /*
-     * Basic Authentication
+     * ==========================================
+     * BASIC AUTHENTICATION
+     * ==========================================
      */
     const auth =
         Buffer.from(
@@ -224,7 +24,9 @@ async function subscribeUser(data) {
 
 
     /*
-     * Request Headers
+     * ==========================================
+     * REQUEST HEADERS
+     * ==========================================
      */
     const headers = {
 
@@ -244,7 +46,9 @@ async function subscribeUser(data) {
 
 
     /*
-     * Common fields
+     * ==========================================
+     * SUBSCRIPTION REQUEST BODY
+     * ==========================================
      */
     const body = {
 
@@ -271,8 +75,11 @@ async function subscribeUser(data) {
      * ==========================================
      * HE FLOW
      * ==========================================
+     *
+     * If lpTransId is available,
+     * send it to DOT.
+     *
      */
-
     if (data.lpTransId) {
 
         body.lpTransId =
@@ -285,8 +92,11 @@ async function subscribeUser(data) {
      * ==========================================
      * OTP FLOW
      * ==========================================
+     *
+     * If OTP information is available,
+     * send it to DOT.
+     *
      */
-
     if (data.otpId) {
 
         body.otpId =
@@ -304,7 +114,9 @@ async function subscribeUser(data) {
 
 
     /*
-     * LOG REQUEST
+     * ==========================================
+     * LOG SUBSCRIPTION REQUEST
+     * ==========================================
      */
     console.log(
         "===================================="
@@ -314,7 +126,9 @@ async function subscribeUser(data) {
         "SUBSCRIPTION NOTIFICATION REQUEST"
     );
 
-    console.log(body);
+    console.log(
+        body
+    );
 
     console.log(
         "===================================="
@@ -322,43 +136,111 @@ async function subscribeUser(data) {
 
 
     /*
-     * CALL DOT API
+     * ==========================================
+     * CALL DOT SUBSCRIPTION API
+     * ==========================================
      */
-    const response =
-        await axios.post(
+    try {
 
-            process.env.SUBSCRIPTION_API_URL,
+        const response =
+            await axios.post(
 
-            body,
+                process.env.SUBSCRIPTION_API_URL,
 
-            {
-                headers
-            }
+                body,
 
+                {
+                    headers
+                }
+
+            );
+
+
+        /*
+         * ==========================================
+         * LOG SUCCESS RESPONSE
+         * ==========================================
+         */
+        console.log(
+            "===================================="
+        );
+
+        console.log(
+            "SUBSCRIPTION NOTIFICATION RESPONSE"
+        );
+
+        console.log(
+            "Status:",
+            response.status
+        );
+
+        console.log(
+            "Response:",
+            response.data
+        );
+
+        console.log(
+            "===================================="
         );
 
 
-    /*
-     * LOG RESPONSE
-     */
-    console.log(
-        "===================================="
-    );
+        /*
+         * Return DOT response
+         */
+        return response.data;
 
-    console.log(
-        "SUBSCRIPTION NOTIFICATION RESPONSE"
-    );
+    }
+    catch (error) {
 
-    console.log(
-        response.data
-    );
+        /*
+         * ==========================================
+         * LOG ERROR
+         * ==========================================
+         */
+        console.error(
+            "===================================="
+        );
 
-    console.log(
-        "===================================="
-    );
+        console.error(
+            "SUBSCRIPTION NOTIFICATION ERROR"
+        );
+
+        console.error(
+            "Status:",
+            error.response?.status
+        );
+
+        console.error(
+            "Response:",
+            error.response?.data
+        );
+
+        console.error(
+            "Headers:",
+            error.response?.headers
+        );
+
+        console.error(
+            "URL:",
+            process.env.SUBSCRIPTION_API_URL
+        );
+
+        console.error(
+            "Request Body:",
+            body
+        );
+
+        console.error(
+            "===================================="
+        );
 
 
-    return response.data;
+        /*
+         * Send error back to customer-care
+         */
+        throw error;
+
+    }
 
 }
 
@@ -375,7 +257,9 @@ async function subscribeUser(data) {
 async function unsubscribeUser(msisdn) {
 
     /*
-     * Basic Authentication
+     * ==========================================
+     * BASIC AUTHENTICATION
+     * ==========================================
      */
     const auth =
         Buffer.from(
@@ -384,7 +268,9 @@ async function unsubscribeUser(msisdn) {
 
 
     /*
-     * Request Headers
+     * ==========================================
+     * REQUEST HEADERS
+     * ==========================================
      */
     const headers = {
 
@@ -404,7 +290,9 @@ async function unsubscribeUser(msisdn) {
 
 
     /*
-     * Unsubscription Request
+     * ==========================================
+     * UNSUBSCRIPTION REQUEST BODY
+     * ==========================================
      */
     const body = {
 
@@ -424,7 +312,9 @@ async function unsubscribeUser(msisdn) {
 
 
     /*
-     * LOG REQUEST
+     * ==========================================
+     * LOG UNSUBSCRIPTION REQUEST
+     * ==========================================
      */
     console.log(
         "===================================="
@@ -434,7 +324,9 @@ async function unsubscribeUser(msisdn) {
         "UNSUBSCRIPTION NOTIFICATION REQUEST"
     );
 
-    console.log(body);
+    console.log(
+        body
+    );
 
     console.log(
         "===================================="
@@ -442,49 +334,119 @@ async function unsubscribeUser(msisdn) {
 
 
     /*
-     * CALL DOT API
+     * ==========================================
+     * CALL DOT UNSUBSCRIPTION API
+     * ==========================================
      */
-    const response =
-        await axios.post(
+    try {
 
-            process.env.SUBSCRIPTION_API_URL,
+        const response =
+            await axios.post(
 
-            body,
+                process.env.SUBSCRIPTION_API_URL,
 
-            {
-                headers
-            }
+                body,
 
+                {
+                    headers
+                }
+
+            );
+
+
+        /*
+         * ==========================================
+         * LOG SUCCESS RESPONSE
+         * ==========================================
+         */
+        console.log(
+            "===================================="
+        );
+
+        console.log(
+            "UNSUBSCRIPTION NOTIFICATION RESPONSE"
+        );
+
+        console.log(
+            "Status:",
+            response.status
+        );
+
+        console.log(
+            "Response:",
+            response.data
+        );
+
+        console.log(
+            "===================================="
         );
 
 
-    /*
-     * LOG RESPONSE
-     */
-    console.log(
-        "===================================="
-    );
+        /*
+         * Return DOT response
+         */
+        return response.data;
 
-    console.log(
-        "UNSUBSCRIPTION NOTIFICATION RESPONSE"
-    );
+    }
+    catch (error) {
 
-    console.log(
-        response.data
-    );
+        /*
+         * ==========================================
+         * LOG ERROR
+         * ==========================================
+         */
+        console.error(
+            "===================================="
+        );
 
-    console.log(
-        "===================================="
-    );
+        console.error(
+            "UNSUBSCRIPTION NOTIFICATION ERROR"
+        );
+
+        console.error(
+            "Status:",
+            error.response?.status
+        );
+
+        console.error(
+            "Response:",
+            error.response?.data
+        );
+
+        console.error(
+            "Headers:",
+            error.response?.headers
+        );
+
+        console.error(
+            "URL:",
+            process.env.SUBSCRIPTION_API_URL
+        );
+
+        console.error(
+            "Request Body:",
+            body
+        );
+
+        console.error(
+            "===================================="
+        );
 
 
-    return response.data;
+        /*
+         * Send error back to customer-care
+         */
+        throw error;
+
+    }
 
 }
 
 
 /*
+ * ==========================================
  * EXPORT FUNCTIONS
+ * ==========================================
  */
 module.exports = {
 
