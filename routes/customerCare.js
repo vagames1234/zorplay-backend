@@ -2,6 +2,12 @@ const express = require("express");
 
 const router = express.Router();
 
+const {
+    subscribeUser,
+    unsubscribeUser
+} = require("../services/subscriptionApi");
+
+
 /*
  * ==========================================
  * CUSTOMER CARE API
@@ -15,9 +21,10 @@ const router = express.Router();
  *
  * Response:
  * 1 = Successfully processed
- * 0 = Customer not subscribed / MSISDN not found
+ * 0 = Failed / Customer not found / Error
  *
  */
+
 
 router.post("/", async (req, res) => {
 
@@ -32,6 +39,7 @@ router.post("/", async (req, res) => {
             source,
             keyWord
         } = req.body;
+
 
         console.log("====================================");
         console.log("CUSTOMER CARE REQUEST");
@@ -68,12 +76,45 @@ router.post("/", async (req, res) => {
                 "Customer Care SUB request"
             );
 
+
+            const result =
+                await subscribeUser({
+
+                    msisdn,
+
+                    partnerServiceLink:
+                        process.env.PARTNER_SERVICE_LINK
+
+                });
+
+
+            console.log("====================================");
+            console.log(
+                "CUSTOMER CARE SUB RESPONSE"
+            );
+            console.log(result);
+            console.log("====================================");
+
+
             /*
-             * Subscription processing will be
-             * connected here.
+             * DOT SUCCESS
              */
 
-            return res.send("1");
+            if (
+                result &&
+                String(result.errorCode) === "0"
+            ) {
+
+                return res.send("1");
+
+            }
+
+
+            /*
+             * DOT ERROR
+             */
+
+            return res.send("0");
 
         }
 
@@ -90,12 +131,38 @@ router.post("/", async (req, res) => {
                 "Customer Care UNSUB request"
             );
 
+
+            const result =
+                await unsubscribeUser(msisdn);
+
+
+            console.log("====================================");
+            console.log(
+                "CUSTOMER CARE UNSUB RESPONSE"
+            );
+            console.log(result);
+            console.log("====================================");
+
+
             /*
-             * Unsubscription processing will be
-             * connected here.
+             * DOT SUCCESS
              */
 
-            return res.send("1");
+            if (
+                result &&
+                String(result.errorCode) === "0"
+            ) {
+
+                return res.send("1");
+
+            }
+
+
+            /*
+             * DOT ERROR
+             */
+
+            return res.send("0");
 
         }
 
@@ -115,10 +182,12 @@ router.post("/", async (req, res) => {
 
     }
 
+
     catch (error) {
 
         console.error(
             "CUSTOMER CARE ERROR:",
+            error.response?.data ||
             error.message
         );
 
