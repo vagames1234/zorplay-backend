@@ -10,25 +10,43 @@ const {
 
 /*
  * ==========================================
- * CUSTOMER CARE API
+ * DOT CUSTOMER CARE API
  * ==========================================
  *
- * DOT Customer Care → Our Backend
+ * DOT Customer Care -> Our Backend
  *
  * commandType:
- * SUB   = Subscribe
- * UNSUB = Unsubscribe
  *
- * Response:
- * 1 = Successfully processed
- * 0 = Failed / Customer not found / Error
+ * SUB
+ *     Subscribe customer
+ *
+ * UNSUB
+ *     Unsubscribe customer
+ *
+ *
+ * DOT expects:
+ *
+ * 1 = Action processed successfully
+ * 0 = Action failed / customer not found
  *
  */
 
 
+/*
+ * ==========================================
+ * CUSTOMER CARE ENDPOINT
+ * ==========================================
+ */
+
 router.post("/", async (req, res) => {
 
     try {
+
+        /*
+         * ==========================================
+         * READ DOT REQUEST
+         * ==========================================
+         */
 
         const {
             msgId,
@@ -40,6 +58,12 @@ router.post("/", async (req, res) => {
             keyWord
         } = req.body;
 
+
+        /*
+         * ==========================================
+         * LOG CUSTOMER CARE REQUEST
+         * ==========================================
+         */
 
         console.log("====================================");
         console.log("CUSTOMER CARE REQUEST");
@@ -53,40 +77,76 @@ router.post("/", async (req, res) => {
          * ==========================================
          */
 
-        if (!msisdn || !commandType) {
+        if (!msisdn) {
 
             console.log(
-                "Customer Care: Required field missing"
+                "CUSTOMER CARE ERROR: MSISDN missing"
             );
 
             return res.send("0");
+        }
 
+
+        if (!commandType) {
+
+            console.log(
+                "CUSTOMER CARE ERROR: commandType missing"
+            );
+
+            return res.send("0");
         }
 
 
         /*
          * ==========================================
-         * SUB REQUEST
+         * NORMALIZE COMMAND
          * ==========================================
          */
 
-        if (commandType === "SUB") {
+        const command =
+            String(commandType)
+                .trim()
+                .toUpperCase();
+
+
+        /*
+         * ==========================================
+         * SUBSCRIPTION
+         * ==========================================
+         */
+
+        if (command === "SUB") {
 
             console.log(
                 "Customer Care SUB request"
             );
 
 
+            /*
+             * ==========================================
+             * CALL SUBSCRIPTION API
+             * ==========================================
+             *
+             * subscriptionApi.js will create:
+             *
+             * msisdn
+             * serviceId
+             * opId
+             * action = 1
+             *
+             */
+
             const result =
                 await subscribeUser({
-
-                    msisdn,
-
-                    partnerServiceLink:
-                        process.env.PARTNER_SERVICE_LINK
-
+                    msisdn: msisdn
                 });
 
+
+            /*
+             * ==========================================
+             * LOG DOT RESPONSE
+             * ==========================================
+             */
 
             console.log("====================================");
             console.log(
@@ -97,7 +157,9 @@ router.post("/", async (req, res) => {
 
 
             /*
-             * DOT SUCCESS
+             * ==========================================
+             * CHECK DOT SUCCESS
+             * ==========================================
              */
 
             if (
@@ -105,36 +167,64 @@ router.post("/", async (req, res) => {
                 String(result.errorCode) === "0"
             ) {
 
-                return res.send("1");
+                console.log(
+                    "CUSTOMER CARE SUB SUCCESS"
+                );
 
+                return res.send("1");
             }
 
 
             /*
-             * DOT ERROR
+             * ==========================================
+             * DOT RETURNED FAILURE
+             * ==========================================
              */
 
-            return res.send("0");
+            console.log(
+                "CUSTOMER CARE SUB FAILED"
+            );
 
+            return res.send("0");
         }
 
 
         /*
          * ==========================================
-         * UNSUB REQUEST
+         * UNSUBSCRIPTION
          * ==========================================
          */
 
-        if (commandType === "UNSUB") {
+        if (command === "UNSUB") {
 
             console.log(
                 "Customer Care UNSUB request"
             );
 
 
+            /*
+             * ==========================================
+             * CALL UNSUBSCRIPTION API
+             * ==========================================
+             *
+             * subscriptionApi.js will create:
+             *
+             * msisdn
+             * serviceId
+             * opId
+             * action = 2
+             *
+             */
+
             const result =
                 await unsubscribeUser(msisdn);
 
+
+            /*
+             * ==========================================
+             * LOG DOT RESPONSE
+             * ==========================================
+             */
 
             console.log("====================================");
             console.log(
@@ -145,7 +235,9 @@ router.post("/", async (req, res) => {
 
 
             /*
-             * DOT SUCCESS
+             * ==========================================
+             * CHECK DOT SUCCESS
+             * ==========================================
              */
 
             if (
@@ -153,17 +245,25 @@ router.post("/", async (req, res) => {
                 String(result.errorCode) === "0"
             ) {
 
-                return res.send("1");
+                console.log(
+                    "CUSTOMER CARE UNSUB SUCCESS"
+                );
 
+                return res.send("1");
             }
 
 
             /*
-             * DOT ERROR
+             * ==========================================
+             * DOT RETURNED FAILURE
+             * ==========================================
              */
 
-            return res.send("0");
+            console.log(
+                "CUSTOMER CARE UNSUB FAILED"
+            );
 
+            return res.send("0");
         }
 
 
@@ -174,7 +274,7 @@ router.post("/", async (req, res) => {
          */
 
         console.log(
-            "Unknown commandType:",
+            "CUSTOMER CARE ERROR: Unknown commandType:",
             commandType
         );
 
@@ -183,19 +283,56 @@ router.post("/", async (req, res) => {
     }
 
 
+    /*
+     * ==========================================
+     * EXCEPTION HANDLING
+     * ==========================================
+     */
+
     catch (error) {
 
         console.error(
-            "CUSTOMER CARE ERROR:",
-            error.response?.data ||
+            "===================================="
+        );
+
+        console.error(
+            "CUSTOMER CARE ERROR"
+        );
+
+        console.error(
+            "Message:",
             error.message
         );
 
-        return res.send("0");
+        console.error(
+            "Status:",
+            error.response?.status
+        );
 
+        console.error(
+            "Response:",
+            error.response?.data
+        );
+
+        console.error(
+            "===================================="
+        );
+
+
+        /*
+         * DOT expects 0 when processing fails.
+         */
+
+        return res.send("0");
     }
 
 });
 
+
+/*
+ * ==========================================
+ * EXPORT ROUTER
+ * ==========================================
+ */
 
 module.exports = router;
