@@ -17,6 +17,7 @@ async function subscribeUser(data) {
      * BASIC AUTHENTICATION
      * ==========================================
      */
+
     const auth =
         Buffer.from(
             `${process.env.USERNAME}:${process.env.PASSWORD}`
@@ -28,6 +29,7 @@ async function subscribeUser(data) {
      * REQUEST HEADERS
      * ==========================================
      */
+
     const headers = {
 
         Authorization:
@@ -49,7 +51,16 @@ async function subscribeUser(data) {
      * ==========================================
      * SUBSCRIPTION REQUEST BODY
      * ==========================================
+     *
+     * DOT documentation specifies:
+     *
+     * msisdn
+     * serviceId
+     * opId
+     * action
+     *
      */
+
     const body = {
 
         msisdn:
@@ -62,24 +73,21 @@ async function subscribeUser(data) {
             Number(process.env.OP_ID),
 
         action:
-            1,
-
-        partnerServiceLink:
-            data.partnerServiceLink ||
-            process.env.PARTNER_SERVICE_LINK
+            1
 
     };
 
 
     /*
      * ==========================================
-     * HE FLOW
+     * LANDING PAGE FLOW
      * ==========================================
      *
-     * If lpTransId is available,
-     * send it to DOT.
+     * lpTransId is mandatory when
+     * Partners Landing Page API is used.
      *
      */
+
     if (data.lpTransId) {
 
         body.lpTransId =
@@ -90,13 +98,31 @@ async function subscribeUser(data) {
 
     /*
      * ==========================================
+     * MSISDN FORWARDING FLOW
+     * ==========================================
+     *
+     * heId is conditional.
+     *
+     */
+
+    if (data.heId) {
+
+        body.heId =
+            data.heId;
+
+    }
+
+
+    /*
+     * ==========================================
      * OTP FLOW
      * ==========================================
      *
-     * If OTP information is available,
-     * send it to DOT.
+     * otpId and otpPIN are mandatory
+     * when OTP API is used.
      *
      */
+
     if (data.otpId) {
 
         body.otpId =
@@ -115,9 +141,10 @@ async function subscribeUser(data) {
 
     /*
      * ==========================================
-     * LOG SUBSCRIPTION REQUEST
+     * LOG REQUEST
      * ==========================================
      */
+
     console.log(
         "===================================="
     );
@@ -127,6 +154,12 @@ async function subscribeUser(data) {
     );
 
     console.log(
+        "URL:",
+        process.env.SUBSCRIPTION_API_URL
+    );
+
+    console.log(
+        "Request Body:",
         body
     );
 
@@ -137,9 +170,10 @@ async function subscribeUser(data) {
 
     /*
      * ==========================================
-     * CALL DOT SUBSCRIPTION API
+     * CALL DOT API
      * ==========================================
      */
+
     try {
 
         const response =
@@ -161,6 +195,7 @@ async function subscribeUser(data) {
          * LOG SUCCESS RESPONSE
          * ==========================================
          */
+
         console.log(
             "===================================="
         );
@@ -170,7 +205,7 @@ async function subscribeUser(data) {
         );
 
         console.log(
-            "Status:",
+            "HTTP Status:",
             response.status
         );
 
@@ -187,6 +222,7 @@ async function subscribeUser(data) {
         /*
          * Return DOT response
          */
+
         return response.data;
 
     }
@@ -197,6 +233,7 @@ async function subscribeUser(data) {
          * LOG ERROR
          * ==========================================
          */
+
         console.error(
             "===================================="
         );
@@ -206,7 +243,7 @@ async function subscribeUser(data) {
         );
 
         console.error(
-            "Status:",
+            "HTTP Status:",
             error.response?.status
         );
 
@@ -216,7 +253,7 @@ async function subscribeUser(data) {
         );
 
         console.error(
-            "Headers:",
+            "Response Headers:",
             error.response?.headers
         );
 
@@ -235,9 +272,6 @@ async function subscribeUser(data) {
         );
 
 
-        /*
-         * Send error back to customer-care
-         */
         throw error;
 
     }
@@ -261,6 +295,7 @@ async function unsubscribeUser(msisdn) {
      * BASIC AUTHENTICATION
      * ==========================================
      */
+
     const auth =
         Buffer.from(
             `${process.env.USERNAME}:${process.env.PASSWORD}`
@@ -272,6 +307,7 @@ async function unsubscribeUser(msisdn) {
      * REQUEST HEADERS
      * ==========================================
      */
+
     const headers = {
 
         Authorization:
@@ -294,6 +330,7 @@ async function unsubscribeUser(msisdn) {
      * UNSUBSCRIPTION REQUEST BODY
      * ==========================================
      */
+
     const body = {
 
         msisdn:
@@ -313,9 +350,10 @@ async function unsubscribeUser(msisdn) {
 
     /*
      * ==========================================
-     * LOG UNSUBSCRIPTION REQUEST
+     * LOG REQUEST
      * ==========================================
      */
+
     console.log(
         "===================================="
     );
@@ -325,6 +363,12 @@ async function unsubscribeUser(msisdn) {
     );
 
     console.log(
+        "URL:",
+        process.env.SUBSCRIPTION_API_URL
+    );
+
+    console.log(
+        "Request Body:",
         body
     );
 
@@ -335,9 +379,10 @@ async function unsubscribeUser(msisdn) {
 
     /*
      * ==========================================
-     * CALL DOT UNSUBSCRIPTION API
+     * CALL DOT API
      * ==========================================
      */
+
     try {
 
         const response =
@@ -359,6 +404,7 @@ async function unsubscribeUser(msisdn) {
          * LOG SUCCESS RESPONSE
          * ==========================================
          */
+
         console.log(
             "===================================="
         );
@@ -368,7 +414,7 @@ async function unsubscribeUser(msisdn) {
         );
 
         console.log(
-            "Status:",
+            "HTTP Status:",
             response.status
         );
 
@@ -382,9 +428,6 @@ async function unsubscribeUser(msisdn) {
         );
 
 
-        /*
-         * Return DOT response
-         */
         return response.data;
 
     }
@@ -395,6 +438,7 @@ async function unsubscribeUser(msisdn) {
          * LOG ERROR
          * ==========================================
          */
+
         console.error(
             "===================================="
         );
@@ -404,7 +448,7 @@ async function unsubscribeUser(msisdn) {
         );
 
         console.error(
-            "Status:",
+            "HTTP Status:",
             error.response?.status
         );
 
@@ -414,7 +458,7 @@ async function unsubscribeUser(msisdn) {
         );
 
         console.error(
-            "Headers:",
+            "Response Headers:",
             error.response?.headers
         );
 
@@ -433,9 +477,6 @@ async function unsubscribeUser(msisdn) {
         );
 
 
-        /*
-         * Send error back to customer-care
-         */
         throw error;
 
     }
@@ -448,6 +489,7 @@ async function unsubscribeUser(msisdn) {
  * EXPORT FUNCTIONS
  * ==========================================
  */
+
 module.exports = {
 
     subscribeUser,
