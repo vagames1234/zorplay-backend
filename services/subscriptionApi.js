@@ -10,6 +10,8 @@ const axios = require("axios");
  * Subscribe user
  *
  */
+
+
 async function subscribeUser(data) {
 
     /*
@@ -51,14 +53,6 @@ async function subscribeUser(data) {
      * ==========================================
      * SUBSCRIPTION REQUEST BODY
      * ==========================================
-     *
-     * DOT documentation specifies:
-     *
-     * msisdn
-     * serviceId
-     * opId
-     * action
-     *
      */
 
     const body = {
@@ -73,18 +67,22 @@ async function subscribeUser(data) {
             Number(process.env.OP_ID),
 
         action:
-            1
+            1,
+
+        partnerServiceLink:
+            data.partnerServiceLink ||
+            process.env.PARTNER_SERVICE_LINK
 
     };
 
 
     /*
      * ==========================================
-     * LANDING PAGE FLOW
+     * HE FLOW
      * ==========================================
      *
-     * lpTransId is mandatory when
-     * Partners Landing Page API is used.
+     * If lpTransId is available,
+     * send it to DOT.
      *
      */
 
@@ -98,28 +96,11 @@ async function subscribeUser(data) {
 
     /*
      * ==========================================
-     * MSISDN FORWARDING FLOW
-     * ==========================================
-     *
-     * heId is conditional.
-     *
-     */
-
-    if (data.heId) {
-
-        body.heId =
-            data.heId;
-
-    }
-
-
-    /*
-     * ==========================================
      * OTP FLOW
      * ==========================================
      *
-     * otpId and otpPIN are mandatory
-     * when OTP API is used.
+     * If OTP information is available,
+     * send it to DOT.
      *
      */
 
@@ -141,7 +122,59 @@ async function subscribeUser(data) {
 
     /*
      * ==========================================
-     * LOG REQUEST
+     * SAFE ENVIRONMENT CHECK
+     * ==========================================
+     *
+     * We intentionally DO NOT print:
+     *
+     * USERNAME
+     * PASSWORD
+     * AES_KEY
+     * Authorization header
+     *
+     */
+
+    console.log(
+        "===================================="
+    );
+
+    console.log(
+        "SUBSCRIPTION ENVIRONMENT CHECK"
+    );
+
+    console.log(
+        "SERVICE_ID:",
+        process.env.SERVICE_ID
+    );
+
+    console.log(
+        "OP_ID:",
+        process.env.OP_ID
+    );
+
+    console.log(
+        "PARTNER_ID:",
+        process.env.PARTNER_ID
+    );
+
+    console.log(
+        "PARTNER_SERVICE_LINK:",
+        process.env.PARTNER_SERVICE_LINK
+    );
+
+    console.log(
+        "SUBSCRIPTION_API_URL:",
+        process.env.SUBSCRIPTION_API_URL
+    );
+
+    console.log(
+        "===================================="
+    );
+
+
+    /*
+     * ==========================================
+     * LOG SUBSCRIPTION REQUEST
      * ==========================================
      */
 
@@ -154,12 +187,6 @@ async function subscribeUser(data) {
     );
 
     console.log(
-        "URL:",
-        process.env.SUBSCRIPTION_API_URL
-    );
-
-    console.log(
-        "Request Body:",
         body
     );
 
@@ -170,7 +197,7 @@ async function subscribeUser(data) {
 
     /*
      * ==========================================
-     * CALL DOT API
+     * CALL DOT SUBSCRIPTION API
      * ==========================================
      */
 
@@ -205,7 +232,7 @@ async function subscribeUser(data) {
         );
 
         console.log(
-            "HTTP Status:",
+            "Status:",
             response.status
         );
 
@@ -226,6 +253,7 @@ async function subscribeUser(data) {
         return response.data;
 
     }
+
     catch (error) {
 
         /*
@@ -272,6 +300,10 @@ async function subscribeUser(data) {
         );
 
 
+        /*
+         * Send error back to customer-care
+         */
+
         throw error;
 
     }
@@ -288,6 +320,8 @@ async function subscribeUser(data) {
  * Unsubscribe user
  *
  */
+
+
 async function unsubscribeUser(msisdn) {
 
     /*
@@ -350,7 +384,7 @@ async function unsubscribeUser(msisdn) {
 
     /*
      * ==========================================
-     * LOG REQUEST
+     * LOG UNSUBSCRIPTION REQUEST
      * ==========================================
      */
 
@@ -363,12 +397,6 @@ async function unsubscribeUser(msisdn) {
     );
 
     console.log(
-        "URL:",
-        process.env.SUBSCRIPTION_API_URL
-    );
-
-    console.log(
-        "Request Body:",
         body
     );
 
@@ -379,7 +407,7 @@ async function unsubscribeUser(msisdn) {
 
     /*
      * ==========================================
-     * CALL DOT API
+     * CALL DOT UNSUBSCRIPTION API
      * ==========================================
      */
 
@@ -414,7 +442,7 @@ async function unsubscribeUser(msisdn) {
         );
 
         console.log(
-            "HTTP Status:",
+            "Status:",
             response.status
         );
 
@@ -428,9 +456,14 @@ async function unsubscribeUser(msisdn) {
         );
 
 
+        /*
+         * Return DOT response
+         */
+
         return response.data;
 
     }
+
     catch (error) {
 
         /*
@@ -476,6 +509,10 @@ async function unsubscribeUser(msisdn) {
             "===================================="
         );
 
+
+        /*
+         * Send error back to customer-care
+         */
 
         throw error;
 
