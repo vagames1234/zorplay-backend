@@ -1,5 +1,7 @@
 const express = require("express");
 
+console.log("CUSTOMER CARE ROUTE FILE LOADED");
+
 const router = express.Router();
 
 const {
@@ -13,30 +15,20 @@ const {
  * DOT CUSTOMER CARE API
  * ==========================================
  *
- * DOT Customer Care -> Our Backend
+ * POST /sp-notification/
  *
  * commandType:
  *
- * SUB
- *     Subscribe customer
+ * SUB   -> Subscribe customer
+ * UNSUB -> Unsubscribe customer
  *
- * UNSUB
- *     Unsubscribe customer
+ * Response:
  *
- *
- * DOT expects:
- *
- * 1 = Action processed successfully
- * 0 = Action failed / customer not found
+ * 1 -> Successfully processed
+ * 0 -> Failed / customer not found
  *
  */
 
-
-/*
- * ==========================================
- * CUSTOMER CARE ENDPOINT
- * ==========================================
- */
 
 router.post("/", async (req, res) => {
 
@@ -44,7 +36,7 @@ router.post("/", async (req, res) => {
 
         /*
          * ==========================================
-         * READ DOT REQUEST
+         * READ REQUEST
          * ==========================================
          */
 
@@ -55,58 +47,58 @@ router.post("/", async (req, res) => {
             commandType,
             msisdn,
             source,
-            keyword
+            keyWord
         } = req.body;
 
 
         /*
          * ==========================================
-         * LOG CUSTOMER CARE REQUEST
+         * LOG REQUEST
          * ==========================================
          */
 
-        console.log("====================================");
-        console.log("CUSTOMER CARE REQUEST");
-        console.log(req.body);
-        console.log("====================================");
+        console.log(
+            "===================================="
+        );
+
+        console.log(
+            "DOT CUSTOMER CARE REQUEST"
+        );
+
+        console.log("msgId       :", msgId);
+        console.log("opId        :", opId);
+        console.log("serviceId   :", serviceId);
+        console.log("commandType :", commandType);
+        console.log("msisdn      :", msisdn);
+        console.log("source      :", source);
+        console.log("keyWord     :", keyWord);
+
+        console.log(
+            "===================================="
+        );
 
 
         /*
          * ==========================================
-         * VALIDATION
+         * BASIC VALIDATION
          * ==========================================
          */
 
-        if (!msisdn) {
+        if (
+            msgId === undefined ||
+            opId === undefined ||
+            !serviceId ||
+            !commandType ||
+            !msisdn ||
+            !source
+        ) {
 
             console.log(
-                "CUSTOMER CARE ERROR: MSISDN missing"
+                "CUSTOMER CARE REQUEST INVALID"
             );
 
             return res.send("0");
         }
-
-
-        if (!commandType) {
-
-            console.log(
-                "CUSTOMER CARE ERROR: commandType missing"
-            );
-
-            return res.send("0");
-        }
-
-
-        /*
-         * ==========================================
-         * NORMALIZE COMMAND
-         * ==========================================
-         */
-
-        const command =
-            String(commandType)
-                .trim()
-                .toUpperCase();
 
 
         /*
@@ -115,30 +107,21 @@ router.post("/", async (req, res) => {
          * ==========================================
          */
 
-        if (command === "SUB") {
+        if (commandType === "SUB") {
 
             console.log(
-                "Customer Care SUB request"
+                "CUSTOMER CARE COMMAND: SUB"
             );
 
 
-            /*
-             * ==========================================
-             * CALL SUBSCRIPTION API
-             * ==========================================
-             *
-             * subscriptionApi.js will create:
-             *
-             * msisdn
-             * serviceId
-             * opId
-             * action = 1
-             *
-             */
-
             const result =
                 await subscribeUser({
-                    msisdn: msisdn
+
+                    msisdn: msisdn,
+
+                    partnerServiceLink:
+                        process.env.PARTNER_SERVICE_LINK
+
                 });
 
 
@@ -148,17 +131,24 @@ router.post("/", async (req, res) => {
              * ==========================================
              */
 
-            console.log("====================================");
             console.log(
-                "CUSTOMER CARE SUB RESPONSE"
+                "===================================="
             );
+
+            console.log(
+                "SUBSCRIPTION API RESPONSE"
+            );
+
             console.log(result);
-            console.log("====================================");
+
+            console.log(
+                "===================================="
+            );
 
 
             /*
              * ==========================================
-             * CHECK DOT SUCCESS
+             * SUCCESS
              * ==========================================
              */
 
@@ -177,7 +167,7 @@ router.post("/", async (req, res) => {
 
             /*
              * ==========================================
-             * DOT RETURNED FAILURE
+             * FAILURE
              * ==========================================
              */
 
@@ -195,26 +185,12 @@ router.post("/", async (req, res) => {
          * ==========================================
          */
 
-        if (command === "UNSUB") {
+        if (commandType === "UNSUB") {
 
             console.log(
-                "Customer Care UNSUB request"
+                "CUSTOMER CARE COMMAND: UNSUB"
             );
 
-
-            /*
-             * ==========================================
-             * CALL UNSUBSCRIPTION API
-             * ==========================================
-             *
-             * subscriptionApi.js will create:
-             *
-             * msisdn
-             * serviceId
-             * opId
-             * action = 2
-             *
-             */
 
             const result =
                 await unsubscribeUser(msisdn);
@@ -226,17 +202,24 @@ router.post("/", async (req, res) => {
              * ==========================================
              */
 
-            console.log("====================================");
             console.log(
-                "CUSTOMER CARE UNSUB RESPONSE"
+                "===================================="
             );
+
+            console.log(
+                "UNSUBSCRIPTION API RESPONSE"
+            );
+
             console.log(result);
-            console.log("====================================");
+
+            console.log(
+                "===================================="
+            );
 
 
             /*
              * ==========================================
-             * CHECK DOT SUCCESS
+             * SUCCESS
              * ==========================================
              */
 
@@ -255,7 +238,7 @@ router.post("/", async (req, res) => {
 
             /*
              * ==========================================
-             * DOT RETURNED FAILURE
+             * FAILURE
              * ==========================================
              */
 
@@ -269,12 +252,12 @@ router.post("/", async (req, res) => {
 
         /*
          * ==========================================
-         * UNKNOWN COMMAND
+         * INVALID COMMAND TYPE
          * ==========================================
          */
 
         console.log(
-            "CUSTOMER CARE ERROR: Unknown commandType:",
+            "INVALID COMMAND TYPE:",
             commandType
         );
 
@@ -283,13 +266,13 @@ router.post("/", async (req, res) => {
     }
 
 
-    /*
-     * ==========================================
-     * EXCEPTION HANDLING
-     * ==========================================
-     */
-
     catch (error) {
+
+        /*
+         * ==========================================
+         * ERROR
+         * ==========================================
+         */
 
         console.error(
             "===================================="
@@ -300,18 +283,8 @@ router.post("/", async (req, res) => {
         );
 
         console.error(
-            "Message:",
+            error.response?.data ||
             error.message
-        );
-
-        console.error(
-            "Status:",
-            error.response?.status
-        );
-
-        console.error(
-            "Response:",
-            error.response?.data
         );
 
         console.error(
@@ -320,7 +293,10 @@ router.post("/", async (req, res) => {
 
 
         /*
-         * DOT expects 0 when processing fails.
+         * DOT requires:
+         *
+         * 1 = success
+         * 0 = failure
          */
 
         return res.send("0");
@@ -328,11 +304,5 @@ router.post("/", async (req, res) => {
 
 });
 
-
-/*
- * ==========================================
- * EXPORT ROUTER
- * ==========================================
- */
 
 module.exports = router;

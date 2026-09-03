@@ -1,19 +1,6 @@
 require("dotenv").config();
 
 const express = require("express");
-
-app.use((req, res, next) => {
-
-    console.log("====================================");
-    console.log("INCOMING REQUEST");
-    console.log("METHOD :", req.method);
-    console.log("URL    :", req.originalUrl);
-    console.log("HOST   :", req.headers.host);
-    console.log("====================================");
-
-    next();
-});
-
 const cors = require("cors");
 
 const landingRoute = require("./routes/landing");
@@ -31,9 +18,6 @@ const subscribePageRoute =
     require("./routes/unsubscribe");
 
 const billingRoute = require("./routes/billing");
-
-    const customerCareRoute =
-    require("./routes/customerCare");
 
 const app = express();
 
@@ -56,11 +40,6 @@ app.use("/unsubscribe", unsubscribeRoute);
 app.use(
     "/subscribe-page",
     subscribePageRoute
-);
-
-app.use(
-    "/sp-notification",
-    customerCareRoute
 );
 
 app.get("/", (req, res) => {
