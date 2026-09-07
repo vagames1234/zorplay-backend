@@ -1,6 +1,9 @@
 require("dotenv").config();
 
 const express = require("express");
+
+console.log("===== BILLING ROUTES LOADED =====");
+
 const cors = require("cors");
 
 const landingRoute = require("./routes/landing");
