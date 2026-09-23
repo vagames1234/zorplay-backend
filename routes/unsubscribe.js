@@ -6,6 +6,10 @@ const {
     unsubscribeUser
 } = require("../services/subscriptionApi");
 
+const {
+    saveUnsubscription
+} = require("../services/firebaseSubscription");
+
 
 router.post("/", async (req, res) => {
 
@@ -68,19 +72,35 @@ router.post("/", async (req, res) => {
          */
 
         if (
-            result &&
-            String(result.errorCode) === "0"
-        ) {
+    result &&
+    String(result.errorCode) === "0"
+) {
 
-            return res.json({
+    console.log(
+        "DOT unsubscription successful."
+    );
 
-                success: true,
+    /*
+     * ==========================================
+     * UPDATE FIREBASE
+     * ==========================================
+     */
 
-                response: result
+    await saveUnsubscription(msisdn);
 
-            });
+    console.log(
+        "Firebase subscription status updated to INACTIVE."
+    );
 
-        }
+    return res.json({
+
+        success: true,
+
+        response: result
+
+    });
+
+}
 
 
         /*
