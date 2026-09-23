@@ -2,6 +2,8 @@ const express = require("express");
 
 const router = express.Router();
 
+const db = require("../firebaseAdmin");
+
 const {
     generateCallbackSignature
 } = require("../utils/encryption");
@@ -163,6 +165,10 @@ router.get("/", async (req, res) => {
          * Validate signature
          *      ↓
          * Subscription Notification API
+         *      ↓
+         * Save subscriber in Firebase
+         *      ↓
+         * Redirect to Zorplay website
          */
 
         if (
@@ -212,24 +218,64 @@ router.get("/", async (req, res) => {
              */
 
             if (
-    subscriptionResponse &&
-    String(
-        subscriptionResponse.errorCode
-    ) === "0"
-) {
+                subscriptionResponse &&
+                String(
+                    subscriptionResponse.errorCode
+                ) === "0"
+            ) {
 
-    console.log(
-        "Subscription successful."
-    );
+                console.log(
+                    "Subscription successful."
+                );
 
-    console.log(
-        "Redirecting user to Zorplay website..."
-    );
 
-    return res.redirect(
-        "https://zorplay.store/"
-    );
-}
+                /*
+                 * ==========================================
+                 * SAVE SUBSCRIBER IN FIREBASE
+                 * ==========================================
+                 */
+
+                await db
+                    .ref(`subscribers/${msisdn}`)
+                    .set({
+
+                        msisdn: msisdn,
+
+                        status: "SUBSCRIBED",
+
+                        subscriptionDate:
+                            new Date().toISOString(),
+
+                        billingAmount: 150,
+
+                        lastBillingDate: null
+
+                    });
+
+
+                console.log(
+                    "Subscriber saved in Firebase:",
+                    msisdn
+                );
+
+
+                /*
+                 * ==========================================
+                 * REDIRECT TO ZORPLAY WEBSITE
+                 * ==========================================
+                 */
+
+                console.log(
+                    "Redirecting user to Zorplay website..."
+                );
+
+
+                return res.redirect(
+                    "https://zorplay.store/"
+                );
+
+            }
+
 
             /*
              * ==========================================
@@ -411,4 +457,3 @@ router.get("/", async (req, res) => {
 
 
 module.exports = router;
-
