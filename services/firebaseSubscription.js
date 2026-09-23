@@ -158,6 +158,79 @@ async function getSubscription(msisdn) {
 
 }
 
+/*
+ * ==========================================
+ * GET ACTIVE SUBSCRIBERS
+ * ==========================================
+ */
+
+async function getActiveSubscriptions() {
+
+    const snapshot = await db
+        .ref("subscriptions")
+        .orderByChild("status")
+        .equalTo("ACTIVE")
+        .once("value");
+
+    const subscriptions = [];
+
+    snapshot.forEach((child) => {
+
+        subscriptions.push({
+            id: child.key,
+            ...child.val()
+        });
+
+    });
+
+    return subscriptions;
+}
+
+
+/*
+ * ==========================================
+ * UPDATE BILLING RESULT
+ * ==========================================
+ */
+
+async function updateBillingResult(
+    msisdn,
+    billingData
+) {
+
+    const customerRef =
+        getCustomerRef(msisdn);
+
+    await customerRef.update({
+
+        billingStatus:
+            billingData.billingStatus,
+
+        lastBillingDate:
+            new Date().toISOString(),
+
+        lastBillingResultCode:
+            billingData.resultCode || null,
+
+        lastBillingResultDesc:
+            billingData.resultDesc || null,
+
+        lastPartnerTransId:
+            billingData.partnerTransId || null,
+
+        lastDotTransId:
+            billingData.dotTransId || null,
+
+        nextBillingAmount:
+            billingData.nextBillingAmount,
+
+        updatedAt:
+            new Date().toISOString()
+
+    });
+
+}
+
 
 module.exports = {
 
@@ -165,6 +238,10 @@ module.exports = {
 
     saveUnsubscription,
 
-    getSubscription
+    getSubscription,
+
+    getActiveSubscriptions,
+
+    updateBillingResult
 
 };
