@@ -16,6 +16,45 @@ const {
 
 async function processDailyBilling() {
 
+    /*
+     * ==========================================
+     * DRY RUN
+     * ==========================================
+     *
+     * true  = do not send billing request
+     * false = send real billing request
+     */
+
+    const DRY_RUN =
+        String(process.env.BILLING_DRY_RUN).toLowerCase() === "true";
+
+
+    /*
+     * ==========================================
+     * CHECK IF ALREADY BILLED TODAY
+     * ==========================================
+     */
+
+    function isAlreadyBilledToday(lastBillingDate) {
+
+        if (!lastBillingDate) {
+            return false;
+        }
+
+        const lastDate =
+            new Date(lastBillingDate)
+                .toISOString()
+                .slice(0, 10);
+
+        const today =
+            new Date()
+                .toISOString()
+                .slice(0, 10);
+
+        return lastDate === today;
+    }
+
+
     console.log("================================");
     console.log("DAILY BILLING STARTED");
     console.log("================================");
@@ -31,10 +70,44 @@ async function processDailyBilling() {
     );
 
 
+    /*
+     * ==========================================
+     * PROCESS EACH ACTIVE SUBSCRIBER
+     * ==========================================
+     */
+
     for (const subscriber of subscribers) {
 
         const msisdn =
             subscriber.msisdn;
+
+
+        /*
+         * ==========================================
+         * PREVENT DUPLICATE BILLING
+         * ==========================================
+         */
+
+        if (
+            isAlreadyBilledToday(
+                subscriber.lastBillingDate
+            )
+        ) {
+
+            console.log(
+                "SKIPPING: Already billed today:",
+                msisdn
+            );
+
+            continue;
+        }
+
+
+        /*
+         * ==========================================
+         * DETERMINE BILLING AMOUNT
+         * ==========================================
+         */
 
         const amount =
             subscriber.nextBillingAmount ||
@@ -50,6 +123,35 @@ async function processDailyBilling() {
 
 
         try {
+
+            /*
+             * ==========================================
+             * DRY RUN
+             * ==========================================
+             */
+
+            if (DRY_RUN) {
+
+                console.log(
+                    "DRY RUN: Billing request NOT sent."
+                );
+
+                console.log(
+                    "Would bill:",
+                    msisdn,
+                    "Amount:",
+                    amount
+                );
+
+                continue;
+            }
+
+
+            /*
+             * ==========================================
+             * SEND BILLING REQUEST
+             * ==========================================
+             */
 
             const result =
                 await chargeUser({
@@ -102,6 +204,11 @@ async function processDailyBilling() {
                         dotTransId:
                             result.dotTransId,
 
+                        /*
+                         * After successful billing,
+                         * next attempt starts at 150.
+                         */
+
                         nextBillingAmount:
                             150
 
@@ -110,29 +217,48 @@ async function processDailyBilling() {
                 );
 
                 continue;
-
             }
 
 
             /*
              * ==========================================
-             * INSUFFICIENT BALANCE
+             * INSUFFICIENT BALANCE - 1004
              * ==========================================
+             *
+             * 150 → 100 → 50
              */
 
             if (resultCode === "1004") {
 
-                let nextAmount = 100;
+                let nextAmount;
 
-                if (
-                    Number(
-                        subscriber.billingAmount
-                    ) === 100
-                ) {
+
+                if (Number(amount) === 150) {
+
+                    nextAmount = 100;
+
+                } else if (Number(amount) === 100) {
 
                     nextAmount = 50;
 
+                } else {
+
+                    /*
+                     * If already attempting 50,
+                     * keep the next attempt at 50.
+                     */
+
+                    nextAmount = 50;
                 }
+
+
+                console.log(
+                    "Insufficient balance.",
+                    "Current amount:",
+                    amount,
+                    "Next amount:",
+                    nextAmount
+                );
 
 
                 await updateBillingResult(
@@ -164,7 +290,6 @@ async function processDailyBilling() {
                 );
 
                 continue;
-
             }
 
 
@@ -195,6 +320,10 @@ async function processDailyBilling() {
                     dotTransId:
                         result.dotTransId,
 
+                    /*
+                     * Retry using the same amount.
+                     */
+
                     nextBillingAmount:
                         amount
 
@@ -202,9 +331,8 @@ async function processDailyBilling() {
 
             );
 
-        }
 
-        catch (error) {
+        } catch (error) {
 
             console.error(
                 "BILLING ERROR:",
