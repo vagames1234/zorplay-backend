@@ -212,42 +212,24 @@ router.get("/", async (req, res) => {
              */
 
             if (
-                subscriptionResponse &&
-                String(
-                    subscriptionResponse.errorCode
-                ) === "0"
-            ) {
+    subscriptionResponse &&
+    String(
+        subscriptionResponse.errorCode
+    ) === "0"
+) {
 
-                return res.send(`
+    console.log(
+        "Subscription successful."
+    );
 
-                    <html>
+    console.log(
+        "Redirecting user to Zorplay website..."
+    );
 
-                        <head>
-
-                            <title>
-                                Subscription Result
-                            </title>
-
-                        </head>
-
-                        <body>
-
-                            <h2>
-                                Subscription Successful
-                            </h2>
-
-                            <p>
-                                You have been successfully
-                                subscribed to Zorplay.
-                            </p>
-
-                        </body>
-
-                    </html>
-
-                `);
-            }
-
+    return res.redirect(
+        "https://zorplay.store/"
+    );
+}
 
             /*
              * ==========================================
