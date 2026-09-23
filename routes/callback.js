@@ -2,7 +2,6 @@ const express = require("express");
 
 const router = express.Router();
 
-const db = require("../firebaseAdmin");
 
 const {
     generateCallbackSignature
@@ -11,6 +10,10 @@ const {
 const {
     subscribeUser
 } = require("../services/subscriptionApi");
+
+const {
+    saveSubscription
+} = require("../services/firebaseSubscription");
 
 
 router.get("/", async (req, res) => {
@@ -231,31 +234,31 @@ router.get("/", async (req, res) => {
 
                 /*
                  * ==========================================
-                 * SAVE SUBSCRIBER IN FIREBASE
+                 * SAVE SUBSCRIPTION IN FIREBASE
                  * ==========================================
                  */
 
-                await db
-                    .ref(`subscribers/${msisdn}`)
-                    .set({
+                await saveSubscription({
 
-                        msisdn: msisdn,
+                    msisdn: msisdn,
 
-                        status: "SUBSCRIBED",
+                    serviceId:
+                        service_id,
 
-                        subscriptionDate:
-                            new Date().toISOString(),
+                    lpTransId:
+                        lpTransId,
 
-                        billingAmount: 150,
+                    partnerTxId:
+                        partner_txid,
 
-                        lastBillingDate: null
+                    dotTxId:
+                        dot_txid
 
-                    });
+                });
 
 
                 console.log(
-                    "Subscriber saved in Firebase:",
-                    msisdn
+                    "Subscription saved in Firebase."
                 );
 
 
