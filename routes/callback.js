@@ -374,33 +374,30 @@ router.get("/", async (req, res) => {
          * ==========================================
          */
 
-        if (reason_code === "1012") {
+        /*
+ * ==========================================
+ * HE FAILURE - OTP FALLBACK
+ * ==========================================
+ *
+ * DOT requirement:
+ *
+ * reason_code = 0
+ *      → HE successful
+ *
+ * any other reason_code
+ *      → HE failed
+ *      → Redirect to OTP flow
+ */
 
-            console.log(
-                "Header Enrichment Failed - MSISDN not detected"
-            );
+if (reason_code !== "0") {
 
-            console.log(
-                "Reason Code :",
-                reason_code
-            );
+    console.log("Header Enrichment Failed");
+    console.log("Reason Code :", reason_code);
+    console.log("Reason Desc :", reason_desc);
+    console.log("Redirecting user to OTP Flow.");
 
-            console.log(
-                "Reason Desc :",
-                reason_desc
-            );
-
-            console.log(
-                "Redirecting user to OTP Flow."
-            );
-
-
-            return res.redirect(
-                "/otp"
-            );
-
-        }
-
+    return res.redirect("/otp");
+}
 
         /*
          * ==========================================
