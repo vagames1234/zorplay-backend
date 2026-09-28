@@ -5,6 +5,10 @@ const {
 } = require("../services/billingApi");
 
 const {
+    processDailyBilling
+} = require("../services/dailyBilling");
+
+const {
     checkStatusByDotTransId,
     checkStatusByPartnerTransId
 } = require("../services/billingStatusApi");
@@ -342,6 +346,94 @@ router.post("/refund", async (req, res) => {
         return res.status(500).json({
             success: false,
             error: error.response?.data || error.message
+        });
+    }
+});
+
+
+/*
+====================================================
+6. DAILY BILLING TRIGGER
+POST /billing/run-daily
+====================================================
+*/
+
+router.post("/run-daily", async (req, res) => {
+
+    try {
+
+        /*
+         * ==========================================
+         * SECURITY CHECK
+         * ==========================================
+         *
+         * The external scheduler must send:
+         *
+         * x-scheduler-key:
+         * <your secret key>
+         *
+         */
+
+        const schedulerKey =
+            req.headers["x-scheduler-key"];
+
+
+        if (
+            !schedulerKey ||
+            schedulerKey !== process.env.BILLING_SCHEDULER_KEY
+        ) {
+
+            console.log(
+                "UNAUTHORIZED DAILY BILLING REQUEST"
+            );
+
+            return res.status(401).json({
+                success: false,
+                message: "Unauthorized"
+            });
+        }
+
+
+        console.log("====================================");
+        console.log("DAILY BILLING TRIGGERED");
+        console.log("====================================");
+
+
+        /*
+         * ==========================================
+         * RUN DAILY BILLING
+         * ==========================================
+         */
+
+        await processDailyBilling();
+
+
+        console.log("====================================");
+        console.log("DAILY BILLING COMPLETED");
+        console.log("====================================");
+
+
+        return res.status(200).json({
+            success: true,
+            message: "Daily billing completed"
+        });
+
+
+    } catch (error) {
+
+        console.error(
+            "DAILY BILLING ROUTE ERROR:",
+            error.response?.data ||
+            error.message ||
+            error
+        );
+
+        return res.status(500).json({
+            success: false,
+            message: "Daily billing failed",
+            error:
+                error.response?.data ||
+                error.message
         });
     }
 });

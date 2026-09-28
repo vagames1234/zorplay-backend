@@ -3,18 +3,45 @@ const express = require("express");
 const router = express.Router();
 
 
+/*
+====================================================
+ENCRYPTION / SIGNATURE
+====================================================
+*/
+
 const {
     generateCallbackSignature
 } = require("../utils/encryption");
+
+
+/*
+====================================================
+SUBSCRIPTION API
+====================================================
+*/
 
 const {
     subscribeUser
 } = require("../services/subscriptionApi");
 
+
+/*
+====================================================
+FIREBASE SUBSCRIPTION
+====================================================
+*/
+
 const {
     saveSubscription
 } = require("../services/firebaseSubscription");
 
+
+/*
+====================================================
+DOT CALLBACK
+GET /callback
+====================================================
+*/
 
 router.get("/", async (req, res) => {
 
@@ -323,7 +350,7 @@ router.get("/", async (req, res) => {
 
         /*
          * ==========================================
-         * HE FAILURE
+         * HE FAILURE - OTP FALLBACK
          * ==========================================
          *
          * Moov requirement:
@@ -331,22 +358,26 @@ router.get("/", async (req, res) => {
          * reason_code = 0
          *      → HE successful
          *
-         * reason_code != 0
-         *      → Redirect user to OTP flow
+         * reason_code = 1012
+         *      → MSISDN not detected
+         *      → Redirect to OTP flow
          *
-         * Examples:
-         *
-         * 1017 → Invalid User IP
-         * 1012 → MSISDN not detected
-         * etc.
-         *
-         * Any non-zero reason_code goes to OTP.
+         * Any other non-zero reason_code
+         *      → HE failed
+         *      → Do NOT redirect to OTP
          */
 
-        if (reason_code !== "0") {
+
+        /*
+         * ==========================================
+         * REASON CODE 1012
+         * ==========================================
+         */
+
+        if (reason_code === "1012") {
 
             console.log(
-                "Header Enrichment Failed"
+                "Header Enrichment Failed - MSISDN not detected"
             );
 
             console.log(
@@ -367,6 +398,72 @@ router.get("/", async (req, res) => {
             return res.redirect(
                 "/otp"
             );
+
+        }
+
+
+        /*
+         * ==========================================
+         * OTHER HE ERRORS
+         * ==========================================
+         */
+
+        if (reason_code !== "0") {
+
+            console.log(
+                "Header Enrichment Failed"
+            );
+
+            console.log(
+                "Reason Code :",
+                reason_code
+            );
+
+            console.log(
+                "Reason Desc :",
+                reason_desc
+            );
+
+            console.log(
+                "OTP Flow will NOT be used for this error."
+            );
+
+
+            return res.status(400).send(`
+
+                <html>
+
+                    <head>
+
+                        <title>
+                            Header Enrichment Failed
+                        </title>
+
+                    </head>
+
+                    <body>
+
+                        <h2>
+                            Header Enrichment Failed
+                        </h2>
+
+                        <p>
+                            ${
+                                reason_desc ||
+                                "Unable to complete Header Enrichment."
+                            }
+                        </p>
+
+                        <p>
+                            Reason Code:
+                            ${reason_code}
+                        </p>
+
+                    </body>
+
+                </html>
+
+            `);
 
         }
 
@@ -411,13 +508,13 @@ router.get("/", async (req, res) => {
     }
 
 
-    catch (error) {
+    /*
+     * ==========================================
+     * CALLBACK ERROR
+     * ==========================================
+     */
 
-        /*
-         * ==========================================
-         * CALLBACK ERROR
-         * ==========================================
-         */
+    catch (error) {
 
         console.error(
             "Callback Error:",
