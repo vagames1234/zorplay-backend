@@ -3,6 +3,10 @@ const express = require("express");
 const router = express.Router();
 
 const {
+    normalizeGabonMsisdn
+} = require("../utils/msisdn");
+
+const {
     sendOtp
 } = require("../services/otpApi");
 
@@ -658,6 +662,26 @@ router.post("/send", async (req, res) => {
         }
 
 
+        let normalizedMsisdn;
+
+        try {
+
+            normalizedMsisdn =
+                normalizeGabonMsisdn(msisdn);
+
+        } catch (error) {
+
+            return res.status(400).json({
+
+                success: false,
+
+                message: error.message
+
+            });
+
+        }
+
+
         console.log(
             "================================"
         );
@@ -667,8 +691,13 @@ router.post("/send", async (req, res) => {
         );
 
         console.log(
-            "MSISDN:",
+            "Original MSISDN:",
             msisdn
+        );
+
+        console.log(
+            "Normalized MSISDN:",
+            normalizedMsisdn
         );
 
         console.log(
@@ -677,7 +706,7 @@ router.post("/send", async (req, res) => {
 
 
         const response =
-            await sendOtp(msisdn);
+            await sendOtp(normalizedMsisdn);
 
 
         console.log(

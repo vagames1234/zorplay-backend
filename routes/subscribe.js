@@ -3,6 +3,10 @@ const express = require("express");
 const router = express.Router();
 
 const {
+    normalizeGabonMsisdn
+} = require("../utils/msisdn");
+
+const {
     subscribeUser
 } = require("../services/subscriptionApi");
 
@@ -21,11 +25,39 @@ router.post("/", async (req, res) => {
 
         console.log("================================");
         console.log("SUBSCRIPTION REQUEST");
-        console.log("msisdn    :", msisdn);
+console.log(
+    "Original MSISDN   :",
+    msisdn
+);
+
+console.log(
+    "Normalized MSISDN :",
+    normalizedMsisdn
+);
         console.log("lpTransId :", lpTransId);
         console.log("otpId     :", otpId);
         console.log("otpPIN    :", otpPIN ? "******" : "");
         console.log("================================");
+
+
+        let normalizedMsisdn;
+
+try {
+
+    normalizedMsisdn =
+        normalizeGabonMsisdn(msisdn);
+
+} catch (error) {
+
+    return res.status(400).json({
+
+        success: false,
+
+        message: error.message
+
+    });
+
+}
 
 
         /*
@@ -153,21 +185,39 @@ router.post("/", async (req, res) => {
          *
          */
 
+        // const result =
+        //     await subscribeUser({
+
+        //         msisdn,
+
+        //         lpTransId,
+
+        //         otpId,
+
+        //         otpPIN,
+
+        //         partnerServiceLink:
+        //             process.env.PARTNER_SERVICE_LINK
+
+        //     });
+
+
         const result =
-            await subscribeUser({
+    await subscribeUser({
 
-                msisdn,
+        msisdn:
+            normalizedMsisdn,
 
-                lpTransId,
+        lpTransId,
 
-                otpId,
+        otpId,
 
-                otpPIN,
+        otpPIN,
 
-                partnerServiceLink:
-                    process.env.PARTNER_SERVICE_LINK
+        partnerServiceLink:
+            process.env.PARTNER_SERVICE_LINK
 
-            });
+    });
 
 
         console.log("================================");
